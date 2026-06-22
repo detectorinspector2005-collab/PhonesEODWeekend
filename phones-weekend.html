@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phones — Weekend | Workforce EOD Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --orange:#ff6400;--purple:#5000b3;--orange-light:#fff3eb;--purple-light:#f0e8ff;
+  --orange-dark:#cc5000;--purple-dark:#3a0082;--surface:#fff;--surface2:#f8f7fc;
+  --surface3:#f0eef8;--border:rgba(80,0,179,0.12);--border2:rgba(80,0,179,0.22);
+  --text:#1a1a2e;--text2:#4a4a6a;--text3:#8888aa;
+  --success:#0d7c4b;--success-bg:#e6f7f0;--warn:#b86000;--warn-bg:#fff4e6;
+  --danger:#c0140a;--danger-bg:#fdecea;--radius:10px;--radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--surface2);color:var(--text);min-height:100vh;}
+
+/* NAV */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;}
+.nav-brand{display:flex;align-items:center;gap:9px;}
+.nav-logo{width:28px;height:28px;background:linear-gradient(135deg,var(--orange),var(--purple));border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.nav-logo svg{width:15px;height:15px;fill:#fff;}
+.nav-title{font-weight:600;font-size:14px;color:var(--text);}
+.nav-title span{color:var(--orange);}
+.nav-right{display:flex;align-items:center;gap:7px;}
+.btn{border:none;padding:6px 13px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;}
+.btn-orange{background:var(--orange);color:#fff;}.btn-orange:hover{background:var(--orange-dark);}
+.btn-orange:disabled{opacity:.5;cursor:not-allowed;}
+.btn-purple{background:var(--purple);color:#fff;}.btn-purple:hover{background:var(--purple-dark);}
+.btn-outline{background:transparent;color:var(--purple);border:1.5px solid var(--purple);}.btn-outline:hover{background:var(--purple-light);}
+.btn-outline:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}.btn-ghost:hover{border-color:var(--purple);color:var(--purple);}
+
+/* WELCOME SCREEN */
+#welcome-screen{display:none;min-height:100vh;background:var(--surface2);}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;}
+.welcome-card{background:var(--surface);border-radius:20px;border:1px solid var(--border);padding:48px 40px;max-width:560px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(80,0,179,0.07);}
+.welcome-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--orange),var(--purple));border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.welcome-logo svg{width:26px;height:26px;fill:#fff;}
+.welcome-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.welcome-title span{color:var(--orange);}
+.welcome-sub{font-size:13px;color:var(--text3);margin-bottom:36px;line-height:1.6;}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:0;}
+.mode-card{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-lg);padding:28px 20px;cursor:pointer;transition:all .2s;text-align:center;}
+.mode-card:hover{border-color:var(--purple);background:var(--purple-light);transform:translateY(-2px);box-shadow:0 6px 20px rgba(80,0,179,0.12);}
+.mode-card.weekday:hover{border-color:var(--purple);}
+.mode-card.weekend:hover{border-color:var(--orange);}
+.mode-icon{font-size:32px;margin-bottom:12px;}
+.mode-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.mode-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+.mode-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;}
+.mode-tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.tag-ib{background:var(--purple-light);color:var(--purple);}
+.tag-ob{background:var(--orange-light);color:var(--orange-dark);}
+.tag-tech{background:#e6f7f0;color:#0d7c4b;}
+.tag-no{background:var(--surface3);color:var(--text3);text-decoration:line-through;opacity:.7;}
+
+/* LAYOUT */
+.workspace{display:grid;grid-template-columns:420px 1fr;min-height:calc(100vh - 56px);}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;}
+.report-col{padding:20px 24px;overflow-y:auto;}
+@media(max-width:1100px){.workspace{grid-template-columns:1fr;}.sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}}
+
+/* SIDEBAR BLOCKS */
+.sb{background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;flex-shrink:0;}
+.sb-head{padding:9px 13px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;user-select:none;}
+.sb-head::before{content:'';width:3px;height:11px;background:var(--orange);border-radius:2px;display:inline-block;flex-shrink:0;}
+.sb-head-toggle{margin-left:auto;font-size:10px;color:var(--text3);transition:transform .2s;}
+.sb-head-toggle.collapsed{transform:rotate(-90deg);}
+.sb-body{padding:11px 13px;overflow-y:auto;overflow-x:hidden;}
+.sb-body.collapsed{display:none;}
+
+/* UPLOAD CARDS */
+.up-card{background:var(--surface);border:1.5px dashed var(--border2);border-radius:8px;padding:9px 11px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:9px;position:relative;margin-bottom:6px;}
+.up-card:last-child{margin-bottom:0;}
+.up-card:hover{border-color:var(--orange);background:var(--orange-light);}
+.up-card.loaded{border-style:solid;border-color:var(--purple);background:var(--purple-light);}
+.up-card input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.up-icon{font-size:15px;flex-shrink:0;}
+.up-text{flex:1;min-width:0;}
+.up-label{font-size:11px;font-weight:500;color:var(--text2);}
+.up-sub{font-size:10px;color:var(--text3);}
+.up-fn{font-size:9px;color:var(--purple);font-weight:500;word-break:break-all;margin-top:1px;}
+
+/* DATE INPUT */
+.date-input{width:100%;border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);}
+.date-input:focus{outline:none;border-color:var(--orange);}
+.date-label-note{font-size:10px;color:var(--text3);margin-top:5px;}
+
+/* NOTES / TEXTAREA */
+.notes-area{width:100%;min-height:90px;border:1px solid var(--border2);border-radius:8px;padding:9px 11px;font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text);resize:vertical;background:var(--surface);line-height:1.6;}
+.notes-area:focus{outline:none;border-color:var(--orange);}
+.notes-hint{font-size:10px;color:var(--text3);margin-top:4px;line-height:1.5;}
+
+/* HEADCOUNT TABLE in sidebar */
+.hct{width:100%;border-collapse:collapse;font-size:10px;min-width:360px;}
+.hct thead th{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;padding:5px 7px;text-align:center;border-bottom:1px solid var(--border);background:var(--surface3);}
+.hct thead th:first-child{text-align:left;}
+.hct tbody td{padding:5px 7px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;}
+.hct tbody td:first-child{text-align:left;font-weight:500;color:var(--text);font-size:10px;}
+.hct tfoot td{font-weight:600;color:var(--text);background:var(--surface3);font-size:9px;padding:5px 7px;text-align:center;}
+.hct tfoot td:first-child{text-align:left;}
+.hc-inp{width:42px;border:1px solid var(--border2);border-radius:4px;padding:3px 4px;font-size:10px;text-align:center;color:var(--text);font-family:'DM Mono',monospace;background:var(--surface);}
+.hc-inp:focus{outline:none;border-color:var(--orange);}
+.hc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px;}
+.hcs-card{background:var(--surface);border-radius:7px;padding:7px 6px;border:1px solid var(--border);text-align:center;}
+.hcs-label{font-size:9px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;}
+.hcs-val{font-size:15px;font-weight:600;font-family:'DM Mono',monospace;}
+.hcs-val.cv-purple{color:var(--purple);}
+.hcs-val.cv-success{color:var(--success);}
+.hcs-val.cv-warn{color:var(--warn);}
+.hcs-val.cv-orange{color:var(--orange);}
+
+/* OVERFLOW */
+.ov-sub{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;margin-top:10px;}
+.ov-sub:first-child{margin-top:0;}
+.ov-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ov-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+.ov-item{background:var(--surface);border-radius:7px;padding:8px 6px;text-align:center;border:1px solid var(--border);}
+.ov-brand{font-size:9px;font-weight:600;color:var(--text3);margin-bottom:4px;}
+.ov-inp{width:54px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;text-align:center;color:var(--text);font-family:'DM Mono',monospace;background:var(--surface);}
+.ov-inp:focus{outline:none;border-color:var(--orange);}
+.ov-pct{font-size:9px;color:var(--text3);margin-top:3px;}
+
+/* ═══ REPORT AREA ═══ */
+.rpt-header{background:var(--purple);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:14px;border:1px solid var(--purple-dark);}
+.rpt-header h1{font-size:15px;font-weight:600;color:#fff;}
+.rpt-header h1 span{color:var(--orange);}
+.rpt-header .meta-pill,.rpt-header .mp{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);}
+.meta-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--text2);font-family:monospace;}
+.rpt-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;}
+.meta-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;}
+.sc{background:var(--surface);border-radius:var(--radius);padding:11px 13px;border:1px solid var(--border);}
+.sc.c-o{border-left:3px solid var(--orange);}
+.sc.c-p{border-left:3px solid var(--purple);}
+.sc.c-s{border-left:3px solid var(--success);}
+.sc.c-w{border-left:3px solid var(--warn);}
+.sc.c-d{border-left:3px solid var(--danger);}
+.sc-label{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.sc-value{font-size:18px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;}
+.sc-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:7px;margin-top:3px;}
+.bg-g{background:var(--success-bg);color:var(--success);}
+.bg-w{background:var(--warn-bg);color:var(--warn);}
+.bg-b{background:var(--danger-bg);color:var(--danger);}
+
+/* SECTION CARD */
+.sec{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+.sec-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.sec-title{font-size:11px;font-weight:600;color:var(--text);}
+.sec-badge{font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:auto;}
+.badge-ib{background:var(--purple-light);color:var(--purple);}
+.badge-ob{background:var(--orange-light);color:var(--orange-dark);}
+.badge-tech{background:#e6f7f0;color:#0d7c4b;}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.dot-p{background:var(--purple);}
+.dot-o{background:var(--orange);}
+.dot-g{background:var(--success);}
+.sec-body{padding:10px 14px;overflow-x:auto;}
+
+/* DATA TABLE */
+.dt{width:100%;border-collapse:collapse;font-size:11px;min-width:640px;}
+.dt thead th{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2);}
+.dt thead th:first-child{text-align:left;}
+.dt tbody td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);text-align:center;vertical-align:middle;}
+.dt tbody td:first-child{text-align:left;}
+.dt tbody tr:last-child td{border-bottom:none;}
+.dt tbody tr:hover td{background:var(--surface2);}
+.dt .tr-total td{font-weight:600;color:var(--text);background:var(--surface3);font-size:10px;}
+.qname{font-weight:500;color:var(--text);font-size:11px;}
+.pill{display:inline-block;padding:1px 7px;border-radius:7px;font-size:9px;font-weight:600;white-space:nowrap;}
+.pill-g{background:var(--success-bg);color:var(--success);}
+.pill-w{background:var(--warn-bg);color:var(--warn);}
+.pill-b{background:var(--danger-bg);color:var(--danger);}
+.pill-n{background:var(--surface2);color:var(--text2);}
+td.mn{font-family:'DM Mono',monospace;font-size:10px;}
+
+/* HEADCOUNT IN REPORT */
+.hc-rpt-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:700px){.hc-rpt-wrap{grid-template-columns:1fr;}}
+.hc-rpt-sub{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;margin-top:12px;}
+.hc-rpt-sub:first-child{margin-top:0;}
+.ov-display-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:6px;}
+.ov-display-row-2{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+.ov-dcard{background:var(--surface2);border-radius:7px;padding:8px;text-align:center;border:1px solid var(--border);}
+.ov-dcard-brand{font-size:9px;font-weight:600;color:var(--text3);margin-bottom:3px;}
+.ov-dcard-val{font-size:15px;font-weight:600;font-family:'DM Mono',monospace;}
+.ov-dcard-pct{font-size:9px;color:var(--text3);margin-top:2px;}
+.hc-rpt-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px;}
+
+/* ANALYSIS SECTION */
+.analysis-sec{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+.analysis-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.analysis-title{font-size:11px;font-weight:600;color:var(--text);}
+.analysis-body{padding:13px 16px;}
+.analysis-loading{display:flex;align-items:center;gap:9px;color:var(--text3);font-size:11px;padding:13px 16px;}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.note-block{background:var(--surface2);border-radius:var(--radius);padding:10px 12px;border-left:3px solid transparent;}
+.note-block.inbound{border-left-color:var(--purple);}
+.note-block.outbound{border-left-color:var(--orange);}
+.note-block.summary{border-left-color:var(--success);grid-column:1/-1;}
+.note-block.flag{border-left-color:var(--danger);grid-column:1/-1;}
+.note-type{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+.note-text{font-size:11px;color:var(--text2);line-height:1.65;}
+.note-text strong{color:var(--text);font-weight:600;}
+
+/* COPY-FRIENDLY PANEL */
+.copy-panel{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+.copy-panel-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.copy-panel-title{font-size:11px;font-weight:600;color:var(--text);}
+.copy-panel-hint{font-size:10px;color:var(--text3);}
+.copy-panel-body{padding:13px 16px;}
+
+/* WATERMARK */
+.watermark{text-align:center;padding:18px;font-size:10px;color:var(--text3);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,5,30,.65);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--surface);border-radius:var(--radius-lg);padding:20px;max-width:520px;width:100%;border:1px solid var(--border);}
+.modal-title{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text);}
+.modal-sub{font-size:11px;color:var(--text3);margin-bottom:14px;}
+.modal-img-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;max-height:320px;overflow-y:auto;}
+.modal-img-wrap img{width:100%;display:block;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-progress{padding:28px;text-align:center;color:var(--text3);font-size:11px;}
+
+/* EMPTY */
+/* SHARED INPUTS — used by scheduling sidebar */
+.inp{width:100%;border:1px solid var(--border2);border-radius:6px;padding:6px 9px;font-size:11px;font-family:inherit;color:var(--text);background:var(--surface);}
+.inp:focus{outline:none;border-color:var(--orange);}
+.inp-note{font-size:10px;color:var(--text3);margin-top:4px;line-height:1.5;}
+.ta{width:100%;min-height:80px;border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-size:11px;font-family:inherit;color:var(--text);resize:vertical;background:var(--surface);line-height:1.6;}
+.ta:focus{outline:none;border-color:var(--orange);}
+.hci{width:40px;border:1px solid var(--border2);border-radius:4px;padding:2px 3px;font-size:10px;text-align:center;color:var(--text);font-family:monospace;background:var(--surface);}
+.hci:focus{outline:none;border-color:var(--orange);}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.5;}
+.empty-text{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:5px;}
+.empty-sub{font-size:11px;}
+
+@media print{.nav,.sidebar,.btn,.modal-overlay,.copy-panel{display:none!important;}.workspace{display:block;}.report-col{padding:0;}}
+</style>
+</head>
+<body>
+
+<!-- WELCOME SCREEN -->
+<div id="welcome-screen">
+  <div class="welcome">
+    <div class="welcome-card">
+      <div class="welcome-logo"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17.5 14l4 7h-8l4-7z"/></svg></div>
+      <div class="welcome-title">Workforce <span>EOD</span> Report</div>
+      <div class="welcome-sub">Select the type of End-of-Day report you are generating today.</div>
+      <div class="mode-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="mode-card weekday" onclick="selectMode('weekday')">
+          <div class="mode-icon">🗓️</div>
+          <div class="mode-name">Phones — Weekday</div>
+          <div class="mode-desc">Monday – Friday full report with all queues, Tech ETA, overflow and callback sections.</div>
+          <div class="mode-tags">
+            <span class="mode-tag tag-ib">Inbound</span>
+            <span class="mode-tag tag-tech">Tech ETA</span>
+            <span class="mode-tag tag-ob">Outbound AD</span>
+            <span class="mode-tag tag-ib">Overflow</span>
+          </div>
+        </div>
+        <div class="mode-card weekend" onclick="selectMode('weekend')">
+          <div class="mode-icon">☀️</div>
+          <div class="mode-name">Phones — Weekend</div>
+          <div class="mode-desc">Saturday – Sunday simplified report. No Tech ETA, no overflow/callback, reduced headcount rows.</div>
+          <div class="mode-tags">
+            <span class="mode-tag tag-ib">Inbound</span>
+            <span class="mode-tag tag-ob">Outbound AD</span>
+            <span class="mode-tag tag-no">Tech ETA</span>
+            <span class="mode-tag tag-no">Overflow</span>
+          </div>
+        </div>
+        <div class="mode-card" style="border-color:var(--border2);" onmouseover="this.style.borderColor='#0d7c4b';this.style.background='#e6f7f0';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background='';this.style.transform=''" onclick="selectMode('scheduling')">
+          <div class="mode-icon">💬</div>
+          <div class="mode-name">Scheduling — Tenant Support</div>
+          <div class="mode-desc">SMS, Email & Special Task report with SLA tracking, disposition codes and team performance.</div>
+          <div class="mode-tags">
+            <span class="mode-tag tag-ib">SMS</span>
+            <span class="mode-tag tag-ob">Email</span>
+            <span class="mode-tag tag-tech">Special Task</span>
+            <span class="mode-tag tag-ib">SLA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="nav" id="main-nav" style="display:none;">
+  <div class="nav-brand">
+    <div class="nav-logo"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17.5 14l4 7h-8l4-7z"/></svg></div>
+    <span class="nav-title">Workforce <span>EOD</span> Report</span>
+    <span id="mode-badge" style="font-size:10px;font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;"></span>
+  </div>
+  <div class="nav-right">
+    <button class="btn btn-ghost" onclick="goHome()">← Change Mode</button>
+    <button class="btn btn-ghost" onclick="clearAll()">↺ Reset</button>
+    <button class="btn btn-ghost" onclick="window.print()">⊙ Print</button>
+    <button class="btn btn-purple" id="ss-btn" onclick="takeScreenshot()" style="display:none">📷 Export Image</button>
+    <button class="btn btn-orange" id="gen-btn" onclick="generateAnalysis()" style="display:none">✦ Generate Notes</button>
+  </div>
+</nav>
+
+<div class="workspace" id="main-workspace" style="display:none;">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar">
+
+    <!-- REPORT DATE -->
+    <div class="sb">
+      <div class="sb-head" onclick="toggleSb(this)">Report Date<span class="sb-head-toggle">▾</span></div>
+      <div class="sb-body">
+        <input class="date-input" type="date" id="report-date" oninput="onDateChange()">
+        <div class="date-label-note">Set manually — supports post-day reports</div>
+      </div>
+    </div>
+
+    <!-- UPLOADS -->
+    <div class="sb">
+      <div class="sb-head" onclick="toggleSb(this)">Upload CSV Files<span class="sb-head-toggle">▾</span></div>
+      <div class="sb-body">
+        <div class="up-card" id="card-outbound">
+          <span class="up-icon">📤</span>
+          <div class="up-text">
+            <div class="up-label">Outbound (AD)</div>
+            <div class="up-sub">Campaign / outbound queues</div>
+            <div class="up-fn" id="fn-outbound"></div>
+          </div>
+          <input type="file" accept=".csv" onchange="handleUpload(event,'outbound')">
+        </div>
+        <div class="up-card" id="card-inbound">
+          <span class="up-icon">📥</span>
+          <div class="up-text">
+            <div class="up-label">Inbound (IB + Tech ETA)</div>
+            <div class="up-sub">All inbound incl. Tech ETA rows</div>
+            <div class="up-fn" id="fn-inbound"></div>
+          </div>
+          <input type="file" accept=".csv" onchange="handleUpload(event,'inbound')">
+        </div>
+        <div class="up-card" id="card-overflow" style="display:none;">
+          <span class="up-icon">🔀</span>
+          <div class="up-text">
+            <div class="up-label">Overflow — Urgent</div>
+            <div class="up-sub">Row 100 → Basic OV · Row 105 → Sr Bookings OV</div>
+            <div class="up-fn" id="fn-overflow"></div>
+          </div>
+          <input type="file" accept=".csv" onchange="handleUpload(event,'overflow')">
+        </div>
+        <div class="up-card" id="card-fw" style="display:none;">
+          <span class="up-icon">🔧</span>
+          <div class="up-text">
+            <div class="up-label">Overflow — FW</div>
+            <div class="up-sub">Row 100 → Furtherworks OV</div>
+            <div class="up-fn" id="fn-fw"></div>
+          </div>
+          <input type="file" accept=".csv" onchange="handleUpload(event,'fw')">
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPERVISOR NOTES (separate, feeds AI only) -->
+    <div class="sb">
+      <div class="sb-head" onclick="toggleSb(this)">Supervisor Notes<span class="sb-head-toggle">▾</span></div>
+      <div class="sb-body">
+        <textarea class="notes-area" id="supervisor-notes" placeholder="Add context for the AI analysis...&#10;e.g. OT approved for Basic, 2 agents WFH, volume spike at 2PM, Sr Bookings handled overflow..."></textarea>
+        <div class="notes-hint">These notes feed into the AI analysis summary only. Not shown in the report or export.</div>
+      </div>
+    </div>
+
+    <!-- HEADCOUNT -->
+    <div class="sb">
+      <div class="sb-head" onclick="toggleSb(this)">Headcount & Attendance<span class="sb-head-toggle">▾</span></div>
+      <div class="sb-body" style="overflow-x:auto;">
+        <table class="hct">
+          <thead><tr><th>Group</th><th>Pres.</th><th>Abs.</th><th>Exp.</th><th>RD</th><th>Leave</th></tr></thead>
+          <tbody id="hc-tbody"></tbody>
+          <tfoot><tr><td>Total</td><td id="tot-present">0</td><td id="tot-absent">0</td><td id="tot-expected">0</td><td id="tot-rd">0</td><td id="tot-leave">0</td></tr></tfoot>
+        </table>
+        <div class="hc-summary">
+          <div class="hcs-card"><div class="hcs-label">Expected</div><div class="hcs-val cv-purple" id="hs-exp">0</div></div>
+          <div class="hcs-card"><div class="hcs-label">Present</div><div class="hcs-val cv-success" id="hs-pres">0</div></div>
+          <div class="hcs-card"><div class="hcs-label">Absent</div><div class="hcs-val cv-warn" id="hs-abs">0</div></div>
+          <div class="hcs-card"><div class="hcs-label">Attendance</div><div class="hcs-val cv-orange" id="hs-att">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERFLOW & CALLBACK -->
+    <div class="sb" id="sb-overflow">
+      <div class="sb-head" onclick="toggleSb(this)">Overflow & Callback<span class="sb-head-toggle">▾</span></div>
+      <div class="sb-body">
+        <div class="ov-sub">Overflow Calls — Urgent</div>
+        <div class="ov-grid-3">
+          <div class="ov-item"><div class="ov-brand">Basic</div><input class="ov-inp" type="number" id="ov-basic" value="0" min="0" oninput="updateOverflow()"><div class="ov-pct" id="ov-basic-pct">—</div></div>
+          <div class="ov-item"><div class="ov-brand">Sr. Bookings</div><input class="ov-inp" type="number" id="ov-sr" value="0" min="0" oninput="updateOverflow()"><div class="ov-pct" id="ov-sr-pct">—</div></div>
+          <div class="ov-item"><div class="ov-brand">Furtherworks</div><input class="ov-inp" type="number" id="ov-fw" value="0" min="0" oninput="updateOverflow()"><div class="ov-pct" id="ov-fw-pct">—</div></div>
+        </div>
+        <div class="ov-sub">Callback Handled</div>
+        <div class="ov-grid-2">
+          <div class="ov-item"><div class="ov-brand">Basic</div><input class="ov-inp" type="number" id="cb-basic" value="0" min="0" oninput="syncOvDisplay()"></div>
+          <div class="ov-item"><div class="ov-brand">Afterhours</div><input class="ov-inp" type="number" id="cb-after" value="0" min="0" oninput="syncOvDisplay()"></div>
+        </div>
+        <div class="ov-sub">Remarks</div>
+        <textarea class="notes-area" id="hc-remarks" style="min-height:55px;" placeholder="OT hours, staffing notes..." oninput="syncOvDisplay()"></textarea>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══════════ REPORT COLUMN ══════════ -->
+  <div class="report-col">
+
+    <div id="report-area" style="display:none">
+
+      <!-- HEADER -->
+      <div class="rpt-header">
+        <h1>Workforce End of Day Report — <span>Phones</span></h1>
+        <div class="rpt-meta">
+          <span class="meta-pill" id="rpt-date-pill">—</span>
+          <span class="meta-pill" id="rpt-queues-pill">—</span>
+          <span class="meta-pill" id="rpt-contacts-pill">—</span>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div id="stats-row"></div>
+
+      <!-- INBOUND TABLE -->
+      <div class="sec">
+        <div class="sec-head">
+          <span class="dot dot-p"></span>
+          <span class="sec-title">Tenant Queues (IB)</span>
+          <span class="sec-badge badge-ib">Inbound</span>
+        </div>
+        <div class="sec-body" id="tbl-inbound"></div>
+      </div>
+
+      <!-- TECH ETA TABLE -->
+      <div class="sec" id="sec-tech">
+        <div class="sec-head">
+          <span class="dot dot-g"></span>
+          <span class="sec-title">Tech ETA Queues (IB)</span>
+          <span class="sec-badge badge-tech">Tech ETA</span>
+        </div>
+        <div class="sec-body" id="tbl-tech"></div>
+      </div>
+
+      <!-- OUTBOUND TABLE -->
+      <div class="sec">
+        <div class="sec-head">
+          <span class="dot dot-o"></span>
+          <span class="sec-title">Outbound Campaigns (AD)</span>
+          <span class="sec-badge badge-ob">Outbound</span>
+        </div>
+        <div class="sec-body" id="tbl-outbound"></div>
+      </div>
+
+      <!-- BOTTOM SECTION: layout switches between weekday and weekend -->
+      <div id="bottom-layout">
+
+        <!-- WEEKDAY: HC+OV side by side, analysis full width below -->
+        <div id="layout-weekday">
+          <!-- Headcount + Overflow side by side -->
+          <div id="hc-ov-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+
+            <!-- Headcount & Attendance card -->
+            <div class="sec" style="margin-bottom:0;">
+              <div class="sec-head">
+                <span class="dot dot-p"></span>
+                <span class="sec-title">Headcount & Attendance</span>
+              </div>
+              <div class="sec-body" style="overflow-x:auto;">
+                <div id="hc-display-table"></div>
+                <div class="hc-rpt-summary" id="hc-display-summary"></div>
+              </div>
+            </div>
+
+            <!-- Overflow Calls & Callback card -->
+            <div class="sec" id="sec-ov-card" style="margin-bottom:0;">
+              <div class="sec-head">
+                <span class="dot dot-o"></span>
+                <span class="sec-title">Overflow Calls & Callback</span>
+              </div>
+              <div class="sec-body">
+                <div class="hc-rpt-sub" style="margin-top:0;">Overflow Calls — Urgent</div>
+                <div id="ov-display"></div>
+                <div class="hc-rpt-sub" style="margin-top:10px;">Callback Handled</div>
+                <div id="cb-display"></div>
+                <div class="hc-rpt-sub" style="margin-top:10px;">Remarks</div>
+                <div id="remarks-display" style="font-size:11px;color:var(--text2);line-height:1.6;min-height:16px;padding:4px 0;"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Analysis full width -->
+          <div class="analysis-sec" id="analysis-wd">
+            <div class="analysis-head">
+              <span class="analysis-title">EOD Analysis Notes</span>
+              <button class="btn btn-outline no-screenshot" onclick="generateAnalysis()" id="regen-btn" style="font-size:11px;padding:5px 11px;">↺ Regenerate</button>
+            </div>
+            <div id="analysis-content">
+              <div style="padding:13px 16px;font-size:11px;color:var(--text3);">Click <strong style="color:var(--orange)">✦ Generate Notes</strong> in the top bar to produce EOD analysis notes.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEEKEND: HC and Analysis side by side -->
+        <div id="layout-weekend" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;align-items:start;">
+
+            <!-- Headcount card (weekend rows only) -->
+            <div class="sec" style="margin-bottom:0;">
+              <div class="sec-head">
+                <span class="dot dot-p"></span>
+                <span class="sec-title">Headcount & Attendance</span>
+              </div>
+              <div class="sec-body" style="overflow-x:auto;">
+                <div id="hc-display-table-we"></div>
+                <div class="hc-rpt-summary" id="hc-display-summary-we"></div>
+              </div>
+            </div>
+
+            <!-- Analysis Notes card -->
+            <div class="analysis-sec" style="margin-bottom:0;">
+              <div class="analysis-head">
+                <span class="analysis-title">EOD Analysis Notes</span>
+                <button class="btn btn-outline no-screenshot" onclick="generateAnalysis()" id="regen-btn-we" style="font-size:11px;padding:5px 11px;">↺ Regenerate</button>
+              </div>
+              <div id="analysis-content-we">
+                <div style="padding:13px 16px;font-size:11px;color:var(--text3);">Click <strong style="color:var(--orange)">✦ Generate Notes</strong> in the top bar to produce EOD analysis notes.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /bottom-layout -->
+
+      <div class="watermark">Workforce EOD Report · <span id="foot-date"></span> · Workforce Management Team · <span id="foot-mode"></span></div>
+    </div>
+
+    <!-- COPY-FRIENDLY HEADER — outside report snapshot -->
+    <div class="copy-panel" id="copy-panel" style="display:none;">
+      <div class="copy-panel-head">
+        <span class="copy-panel-title">Copy-Friendly Subject Line</span>
+        <span class="copy-panel-hint">Use this as your email subject or message header</span>
+      </div>
+      <div class="copy-panel-body">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;">
+          <span id="copy-header-text" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text);flex:1;"></span>
+          <button class="btn btn-orange" style="flex-shrink:0;" onclick="copyHeader()">⧉ Copy</button>
+        </div>
+        <span class="copy-status" id="copy-status" style="font-size:10px;color:var(--success);opacity:0;transition:opacity .3s;display:block;margin-top:5px;">✓ Copied to clipboard!</span>
+      </div>
+    </div>
+
+    <div id="empty-state">
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <div class="empty-text">No data loaded yet</div>
+        <div class="empty-sub">Set the report date and upload your Amazon Connect CSV exports in the sidebar</div>
+      </div>
+    </div>
+
+  </div><!-- /report-col -->
+</div><!-- /workspace -->
+
+<!-- ═══════════════════════════════════════════
+     SCHEDULING WORKSPACE
+═══════════════════════════════════════════ -->
+<div class="workspace" id="sched-workspace" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sched-sidebar">
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Report Date<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <input class="inp" type="date" id="sched-date" oninput="onSchedDate()">
+        <div class="inp-note">Set manually — supports post-day reports</div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Upload Files<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <div class="up-card" id="sc-card-screenshot"><span class="up-icon">🖼️</span><div class="up-text"><div class="up-label">Key Metrics Screenshot</div><div class="up-sub">FRT, TRT & Assigned Conversations</div><div class="up-fn" id="sc-fn-screenshot"></div></div><input type="file" accept="image/*" onchange="scUpload(event,'screenshot')"></div>
+        <div class="up-card" id="sc-card-disp"><span class="up-icon">📋</span><div class="up-text"><div class="up-label">Disposition Codes (SharePoint)</div><div class="up-sub">TS - Disposition Code CSV (SMS only)</div><div class="up-fn" id="sc-fn-disp"></div></div><input type="file" accept=".csv" onchange="scUpload(event,'disp')"></div>
+        <div style="margin-top:8px;">
+          <div class="inp-note" style="font-weight:600;color:var(--text2);margin-bottom:4px;">Disposition Code Date Range</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div><div class="inp-note" style="margin-bottom:3px;">From</div><input class="inp" type="date" id="sc-disp-from" oninput="scRenderDisp()" style="font-size:11px;"></div>
+            <div><div class="inp-note" style="margin-bottom:3px;">To</div><input class="inp" type="date" id="sc-disp-to" oninput="scRenderDisp()" style="font-size:11px;"></div>
+          </div>
+          <div class="inp-note" id="sc-disp-range-note" style="margin-top:4px;color:var(--text3);">Upload CSV to see available dates</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Supervisor Notes<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <textarea class="ta" id="sched-sup-notes" placeholder="Add context for analysis — OT, system issues, volume spikes..."></textarea>
+        <div class="inp-note">Feeds into analysis notes only.</div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">SMS Performance<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Received</div><input class="inp" type="number" id="sc-sms-received" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Closed</div><input class="inp" type="number" id="sc-sms-closed" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Remaining</div><input class="inp" type="number" id="sc-sms-remaining" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Opening SMS</div><input class="inp" type="number" id="sc-sms-opening" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">SMS Resolved Rate %</div><input class="inp" type="number" id="sc-sms-resolved-rate" min="0" max="100" step="0.1" placeholder="e.g. 22.9" oninput="scRender()"></div>
+        </div>
+        <div class="inp-note" style="margin-top:8px;color:var(--text3);">📷 FRT, TRT & Assigned Conversations come from the Key Metrics Screenshot uploaded above.</div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Email Performance<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Opening Backlog</div><input class="inp" type="number" id="sc-email-opening" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Received</div><input class="inp" type="number" id="sc-email-received" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Closed</div><input class="inp" type="number" id="sc-email-closed" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Remaining</div><input class="inp" type="number" id="sc-email-remaining" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Pending</div><input class="inp" type="number" id="sc-email-pending" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Tickets Handled</div><input class="inp" type="number" id="sc-email-handled" min="0" value="0" oninput="scRender();scSaveDay()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Email Handled Rate %</div><input class="inp" type="number" id="sc-email-handled-rate" min="0" max="100" step="0.1" placeholder="e.g. 44.0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Email SLA %</div><input class="inp" type="number" id="sc-sla-pct" min="0" max="100" step="0.1" placeholder="e.g. 66.7" oninput="scRender()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Special Task (RTY)<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Opening SMS</div><input class="inp" type="number" id="sc-rty-opening" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Received</div><input class="inp" type="number" id="sc-rty-received" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">SMS Touched</div><input class="inp" type="number" id="sc-rty-touched" min="0" value="0" oninput="scRender()"></div>
+          <div><div class="inp-note" style="margin-bottom:4px;font-weight:600;color:var(--text2);">Remaining</div><input class="inp" type="number" id="sc-rty-remaining" min="0" value="0" oninput="scRender()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Headcount & Attendance<span class="sb-tog">▾</span></div>
+      <div class="sb-body" style="overflow-x:auto;">
+        <table class="hct" style="min-width:320px;">
+          <thead><tr><th>Team</th><th>Actual</th><th>Exp.</th><th>Leave</th><th>RD</th></tr></thead>
+          <tbody id="sc-hc-tbody"></tbody>
+          <tfoot><tr><td>Total</td><td id="sc-tot-actual">0</td><td id="sc-tot-exp">0</td><td id="sc-tot-leave">0</td><td id="sc-tot-rd">0</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Overtime<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="background:var(--bg3);"><th style="padding:5px 8px;text-align:left;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);">Task</th><th style="padding:5px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);">Staff</th><th style="padding:5px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);">OT Hrs</th><th style="padding:5px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);">Total Handled</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:5px 8px;font-size:11px;color:var(--text);">SMS</td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-sms-staff" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" step="0.5" id="sc-ot-sms-hrs" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-sms-handled" value="0"></td></tr>
+            <tr><td style="padding:5px 8px;font-size:11px;color:var(--text);">Special Task</td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-rty-staff" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" step="0.5" id="sc-ot-rty-hrs" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-rty-handled" value="0"></td></tr>
+            <tr><td style="padding:5px 8px;font-size:11px;color:var(--text);">Email</td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-email-staff" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" step="0.5" id="sc-ot-email-hrs" value="0"></td><td style="padding:5px 4px;"><input class="hci" type="number" min="0" id="sc-ot-email-handled" value="0"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sb">
+      <div class="sb-head" onclick="tog(this)">Summary Notes<span class="sb-tog">▾</span></div>
+      <div class="sb-body">
+        <div class="inp-note" style="font-weight:600;color:var(--text2);margin-bottom:4px;">SMS Summary</div>
+        <textarea class="ta" id="sc-sms-summary" style="min-height:70px;" placeholder="Write SMS summary notes..."></textarea>
+        <div class="inp-note" style="font-weight:600;color:var(--text2);margin:8px 0 4px;">Email Summary</div>
+        <textarea class="ta" id="sc-email-summary" style="min-height:70px;" placeholder="Write email summary notes..."></textarea>
+        <div class="inp-note" style="font-weight:600;color:var(--text2);margin:8px 0 4px;">Special Task Summary</div>
+        <textarea class="ta" id="sc-rty-summary" style="min-height:60px;" placeholder="Write special task summary notes..."></textarea>
+        <div class="inp-note" style="font-weight:600;color:var(--text2);margin:8px 0 4px;">Others</div>
+        <textarea class="ta" id="sc-others-summary" style="min-height:60px;" placeholder="Other notes..."></textarea>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- SCHEDULING REPORT -->
+  <div class="report-col">
+    <div id="sched-report-area" style="display:none;">
+
+      <!-- HEADER -->
+      <div class="rpt-header">
+        <h1>Scheduling End of Day Summary — <span>Tenant Support & Front App</span></h1>
+        <div class="rpt-meta">
+          <span class="meta-pill" id="sc-date-pill">—</span>
+          <span class="meta-pill" id="sc-contacts-pill">—</span>
+        </div>
+      </div>
+
+      <!-- STAT CARDS — Inbound row style -->
+      <div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px 2px;">SMS & Email at a Glance</div>
+      <div class="stats-row" id="sc-stats-row" style="margin-bottom:14px;"></div>
+
+      <!-- ATTENDANCE -->
+      <div class="sec">
+        <div class="sec-h"><span class="dot dp"></span><span class="sec-t">Attendance</span></div>
+        <div class="sec-b" id="sc-attendance-display"></div>
+      </div>
+
+      <!-- SMS PERFORMANCE -->
+      <div class="sec">
+        <div class="sec-h"><span class="dot" style="background:#0d7c4b;"></span><span class="sec-t">SMS Performance</span><span class="sec-bd btech" style="margin-left:auto;">Front App</span></div>
+        <div class="sec-b" id="sc-sms-display"></div>
+      </div>
+
+      <!-- EMAIL PERFORMANCE -->
+      <div class="sec">
+        <div class="sec-h"><span class="dot do"></span><span class="sec-t">Email Performance</span><span class="sec-bd bob" style="margin-left:auto;">Zendesk</span></div>
+        <div class="sec-b" id="sc-email-display"></div>
+      </div>
+
+      <!-- SPECIAL TASK -->
+      <div class="sec">
+        <div class="sec-h"><span class="dot dp"></span><span class="sec-t">Special Task (RTY)</span><span class="sec-bd bib" style="margin-left:auto;">Front App</span></div>
+        <div class="sec-b" id="sc-rty-display"></div>
+      </div>
+
+      <!-- SMS DISPOSITION CODES -->
+      <div class="sec">
+        <div class="sec-h"><span class="dot" style="background:#b86000;"></span><span class="sec-t">SMS Disposition Codes</span><span class="sec-bd" id="sc-disp-badge" style="background:var(--warn-bg);color:var(--warn);margin-left:auto;">—</span></div>
+        <div class="sec-b" id="sc-disp-display"></div>
+      </div>
+
+      <!-- RESOLVED & HANDLED RATES + OVERTIME side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot dp"></span><span class="sec-t">Resolved & Handled Rates</span></div>
+          <div class="sec-b" id="sc-rates-display"></div>
+        </div>
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot do"></span><span class="sec-t">Tenant Support — Overtime</span></div>
+          <div class="sec-b" id="sc-ot-display"></div>
+        </div>
+      </div>
+
+      <!-- WEEKLY BREAKDOWN -->
+      <div class="sec" id="sec-weekly">
+        <div class="sec-h" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span class="dot" style="background:var(--purple);"></span>
+            <span class="sec-t">SMS & Email Weekly Breakdown</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span id="gs-status" style="font-size:10px;color:var(--text3);"></span>
+            <button class="btn btn-ghost no-screenshot" onclick="gsSave()" style="font-size:10px;padding:4px 10px;">💾 Save to Sheet</button>
+            <button class="btn btn-ghost no-screenshot" onclick="gsLoad()" style="font-size:10px;padding:4px 10px;">↺ Load from Sheet</button>
+          </div>
+        </div>
+        <div class="sec-b" style="overflow-x:auto;">
+          <div id="weekly-table-display"></div>
+        </div>
+      </div>
+
+      <!-- SUMMARIES — 2x2 grid like Phones -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot" style="background:#0d7c4b;"></span><span class="sec-t">SMS Summary</span></div>
+          <div class="sec-b" id="sc-sms-sum-display" style="font-size:11px;color:var(--text2);line-height:1.7;min-height:40px;"></div>
+        </div>
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot do"></span><span class="sec-t">Email Summary</span></div>
+          <div class="sec-b" id="sc-email-sum-display" style="font-size:11px;color:var(--text2);line-height:1.7;min-height:40px;"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot dp"></span><span class="sec-t">Special Task Summary</span></div>
+          <div class="sec-b" id="sc-rty-sum-display" style="font-size:11px;color:var(--text2);line-height:1.7;min-height:40px;"></div>
+        </div>
+        <div class="sec" style="margin-bottom:0;">
+          <div class="sec-h"><span class="dot" style="background:var(--text3);"></span><span class="sec-t">Others</span></div>
+          <div class="sec-b" id="sc-others-sum-display" style="font-size:11px;color:var(--text2);line-height:1.7;min-height:40px;"></div>
+        </div>
+      </div>
+
+      <!-- ANALYSIS -->
+      <div class="analysis-sec">
+        <div class="analysis-head">
+          <span class="analysis-title">EOD Analysis Notes</span>
+          <button class="btn btn-outline no-screenshot" onclick="scGenerateAnalysis()" id="sc-regen-btn" style="font-size:11px;padding:5px 11px;">↺ Regenerate</button>
+        </div>
+        <div id="sc-analysis-content">
+          <div style="padding:13px 16px;font-size:11px;color:var(--text3);">Click <strong style="color:var(--orange)">✦ Generate Notes</strong> in the top bar to produce EOD analysis notes.</div>
+        </div>
+      </div>
+
+      <div class="watermark">Scheduling EOD Report · <span id="sc-foot-date"></span> · Workforce Management Team</div>
+    </div>
+
+    <!-- COPY PANEL -->
+    <div class="copy-panel" id="sc-cp-panel" style="display:none;">
+      <div class="cp-h">
+        <span class="cp-t">Copy-Friendly Subject Line</span>
+        <span class="cp-hint">Use as your email subject or message header</span>
+      </div>
+      <div class="cp-b">
+        <div class="cp-line">
+          <span id="sc-cp-txt" class="cp-txt"></span>
+          <button class="btn btn-o" style="flex-shrink:0;" onclick="scCopyHdr()">⧉ Copy</button>
+        </div>
+        <span class="cp-ok" id="sc-cp-ok" style="font-size:10px;color:var(--ok);opacity:0;transition:opacity .3s;display:block;margin-top:5px;">✓ Copied!</span>
+      </div>
+    </div>
+
+    <div id="sched-empty">
+      <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-text">No scheduling data loaded yet</div>
+        <div class="empty-sub">Fill in the manual inputs in the sidebar to begin</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sched-workspace -->
+<div id="modal-overlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">📷 Export Report Image</div>
+    <div class="modal-sub" id="modal-sub">Generating...</div>
+    <div id="modal-body"><div class="modal-progress"><div class="spinner" style="margin:0 auto 10px;width:20px;height:20px;border-width:3px;"></div>Rendering full report — all tables included...</div></div>
+    <div class="modal-actions" id="modal-actions" style="display:none;">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn btn-ghost" onclick="copyImageToClipboard()" id="copy-img-btn">⧉ Copy Image</button>
+      <button class="btn btn-orange" onclick="downloadImage()">⬇ Download PNG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+const csvData={outbound:null,inbound:null,overflow:null,fw:null};
+let screenshotDataUrl=null;
+let lastNotes=[];
+let currentMode='weekday'; // 'weekday' | 'weekend'
+
+const HC_GROUPS_WEEKDAY=[
+  {key:'pre',label:'Pre office hrs / TTS'},
+  {key:'basic',label:'Basic'},
+  {key:'manual',label:'Basic / Manual'},
+  {key:'sr',label:'Sr Bookings'},
+  {key:'urgent',label:'Urgent'},
+  {key:'fw',label:'Furtherworks'},
+  {key:'afterhours',label:'Afterhours / TTS'},
+];
+const HC_GROUPS_WEEKEND=[
+  {key:'basic',label:'Basic'},
+  {key:'afterhours',label:'Afterhours / TTS'},
+];
+let HC_GROUPS=HC_GROUPS_WEEKDAY;
+
+/* ══════════════════════════════════════════
+   WELCOME / MODE SELECTION
+══════════════════════════════════════════ */
+function selectMode(mode){
+  currentMode=mode;
+  HC_GROUPS=mode==='weekend'?HC_GROUPS_WEEKEND:HC_GROUPS_WEEKDAY;
+
+  // Show nav and workspace, hide welcome
+  document.getElementById('welcome-screen').style.display='none';
+  document.getElementById('main-nav').style.display='flex';
+  if(mode==='scheduling'){
+    document.getElementById('sched-workspace').style.display='grid';
+    badge.textContent='💬 Scheduling';
+    badge.style.cssText='font-size:10px;font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;background:#e6f7f0;color:#0d7c4b;';
+    document.getElementById('foot-mode')&&(document.getElementById('foot-mode').textContent='');
+    scInit();
+    // Wire nav buttons for scheduling
+    document.getElementById('gen-btn').onclick=scGenerateAnalysis;
+    document.getElementById('ss-btn').onclick=scTakeScreenshot;
+    document.getElementById('gen-btn').style.display='none'; // shown after upload
+    document.getElementById('ss-btn').style.display='none';
+    return;
+  }
+  document.getElementById('main-workspace').style.display='grid';
+  // Restore phones nav button handlers
+  document.getElementById('gen-btn').onclick=generateAnalysis;
+  document.getElementById('ss-btn').onclick=takeScreenshot;
+
+  // Mode badge
+  const badge=document.getElementById('mode-badge');
+  if(mode==='weekday'){
+    badge.textContent='📅 Weekday';
+    badge.style.cssText='font-size:10px;font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;background:var(--purple-light);color:var(--purple);';
+  } else {
+    badge.textContent='☀️ Weekend';
+    badge.style.cssText='font-size:10px;font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;background:var(--orange-light);color:var(--orange-dark);';
+  }
+
+  applyMode(mode);
+  renderHCTable();
+  syncHCDisplay();
+  const fm=document.getElementById('foot-mode');
+  if(fm)fm.textContent=mode==='weekday'?'Weekday Report':'Weekend Report';
+}
+
+function applyMode(mode){
+  const isWD=mode==='weekday';
+  // Tech ETA — show/hide in report
+  const secTech=document.getElementById('sec-tech');
+  if(secTech)secTech.style.display=isWD?'':'none';
+  // Overflow sidebar section
+  const sbOv=document.getElementById('sb-overflow');
+  if(sbOv)sbOv.style.display=isWD?'':'none';
+  // Overflow upload cards
+  const cOv=document.getElementById('card-overflow');
+  const cFw=document.getElementById('card-fw');
+  if(cOv)cOv.style.display=isWD?'':'none';
+  if(cFw)cFw.style.display=isWD?'':'none';
+  // Toggle bottom layouts
+  const wd=document.getElementById('layout-weekday');
+  const we=document.getElementById('layout-weekend');
+  if(wd)wd.style.display=isWD?'block':'none';
+  if(we)we.style.display=isWD?'none':'block';
+}
+
+function goHome(){
+  clearAll();
+  document.getElementById('welcome-screen').style.display='block';
+  document.getElementById('main-nav').style.display='none';
+  document.getElementById('main-workspace').style.display='none';
+  document.getElementById('sched-workspace').style.display='none';
+  // Reset nav button handlers to phones defaults
+  document.getElementById('gen-btn').onclick=generateAnalysis;
+  document.getElementById('ss-btn').onclick=takeScreenshot;
+}
+const HC_COLS=['present','absent','expected','rd','leave'];
+let hcData={};
+// Init all possible keys from both modes
+[...HC_GROUPS_WEEKDAY,...HC_GROUPS_WEEKEND].forEach(g=>{
+  if(!hcData[g.key])hcData[g.key]={present:'',absent:'',expected:'',rd:'',leave:''};
+});
+
+/* ══════════════════════════════════════════
+   DATE
+══════════════════════════════════════════ */
+function initDate(){
+  const d=new Date();
+  document.getElementById('report-date').value=d.toISOString().slice(0,10);
+  applyDate(document.getElementById('report-date').value);
+}
+function onDateChange(){applyDate(document.getElementById('report-date').value);updateCopyHeader();}
+function applyDate(iso){
+  if(!iso)return;
+  const d=new Date(iso+'T12:00:00');
+  const fmt=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('rpt-date-pill').textContent=fmt;
+  document.getElementById('foot-date').textContent=fmt;
+}
+initDate();
+
+/* ══════════════════════════════════════════
+   UPLOAD
+══════════════════════════════════════════ */
+const UP_ICONS={outbound:'📤',inbound:'📥',overflow:'🔀',fw:'🔧'};
+function handleUpload(e,key){
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('fn-'+key).textContent=file.name;
+  document.getElementById('card-'+key).classList.add('loaded');
+  document.getElementById('card-'+key).querySelector('.up-icon').textContent='✅';
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
+    csvData[key]=res.data;
+    autoFillOverflow();
+    checkAndRender();
+  }});
+}
+function autoFillOverflow(){
+  if(csvData.overflow){
+    const basicRow=csvData.overflow.find(r=>/^100\s*[-–]/i.test(r['Queue']||''));
+    if(basicRow){const v=parseNum(basicRow['Contacts queued']);if(v>0)document.getElementById('ov-basic').value=v;}
+    const srRow=csvData.overflow.find(r=>/^105\s*[-–]/i.test(r['Queue']||''));
+    if(srRow){const v=parseNum(srRow['Contacts queued']);if(v>0)document.getElementById('ov-sr').value=v;}
+    updateOverflow();
+  }
+  if(csvData.fw){
+    const fwRow=csvData.fw.find(r=>/^100\s*[-–]/i.test(r['Queue']||''));
+    if(fwRow){const v=parseNum(fwRow['Contacts queued']);if(v>0){document.getElementById('ov-fw').value=v;updateOverflow();}}
+  }
+  // Auto-fill Callback from inbound CSV "Callback contacts" column
+  if(csvData.inbound){
+    // Find the Callback contacts column (handles BOM/variations)
+    const sampleRow=csvData.inbound[0]||{};
+    const cbCol=Object.keys(sampleRow).find(k=>k.replace(/[\s\ufeff]/g,'').toLowerCase().includes('callbackcontacts'));
+    if(cbCol){
+      // Basic callback → 100 - Inbound Basic Bookings
+      const basicRow=csvData.inbound.find(r=>/^100\s*[-–]/i.test(r['Queue']||''));
+      const cbBasic=basicRow?parseNum(basicRow[cbCol]):0;
+      document.getElementById('cb-basic').value=cbBasic||0;
+      // Afterhours callback → 900 - After Hours
+      const ahRow=csvData.inbound.find(r=>/^900\s*[-–]/i.test(r['Queue']||''));
+      const cbAH=ahRow?parseNum(ahRow[cbCol]):0;
+      document.getElementById('cb-after').value=cbAH||0;
+      syncOvDisplay();
+    }
+  }
+}
+function checkAndRender(){
+  const any=Object.values(csvData).some(d=>d!==null);
+  if(any){
+    document.getElementById('empty-state').style.display='none';
+    document.getElementById('report-area').style.display='block';
+    document.getElementById('copy-panel').style.display='block';
+    document.getElementById('gen-btn').style.display='inline-flex';
+    document.getElementById('ss-btn').style.display='inline-flex';
+    updateCopyHeader();
+    renderReport();
+  }
+}
+function clearAll(){
+  Object.keys(csvData).forEach(k=>csvData[k]=null);
+  ['outbound','inbound','overflow','fw'].forEach(k=>{
+    document.getElementById('card-'+k).classList.remove('loaded');
+    document.getElementById('fn-'+k).textContent='';
+    document.getElementById('card-'+k).querySelector('.up-icon').textContent=UP_ICONS[k];
+  });
+  document.getElementById('empty-state').style.display='block';
+  document.getElementById('report-area').style.display='none';
+  document.getElementById('copy-panel').style.display='none';
+  document.getElementById('gen-btn').style.display='none';
+  document.getElementById('ss-btn').style.display='none';
+  lastNotes=[];
+  // Reset HC data
+  HC_GROUPS=currentMode==='weekend'?HC_GROUPS_WEEKEND:HC_GROUPS_WEEKDAY;
+  HC_GROUPS_WEEKDAY.forEach(g=>{hcData[g.key]={present:'',absent:'',expected:'',rd:'',leave:''};});
+  HC_GROUPS_WEEKEND.forEach(g=>{hcData[g.key]={present:'',absent:'',expected:'',rd:'',leave:''};});
+  renderHCTable();
+  syncHCDisplay();
+  syncOvDisplay();
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function parseNum(v){if(!v||v==='-'||v==='')return 0;return parseFloat(String(v).replace(/[^0-9.]/g,''))||0;}
+function fmtSec(s){if(!s&&s!==0)return '—';s=Math.round(s);const m=Math.floor(s/60),sc=s%60;return m+':'+String(sc).padStart(2,'0');}
+function pillCls(v){return v<=5?'pill-g':v<=10?'pill-w':'pill-b';}
+function shortQ(q){
+  return q.replace(/^\d+\s*[-–]\s*/,'')
+    .replace(/\bInbound\b\s*/i,'').replace(/\bOutbound\b\s*/i,'')
+    .replace(/\bBookings\b/i,'Bk.').replace(/\bElectrical\b\s*/i,'Elec ')
+    .replace(/\bSafety\b\s*/i,'').replace(/PH Tech Agent\s*[-–]\s*/i,'')
+    .replace(/\bAfter Hours\b/i,'After Hrs').trim();
+}
+function isIBRow(r){const q=r['Queue']||'';return !q.match(/^7[0-9]{2}/)&&!q.toLowerCase().includes('tech');}
+function isTechRow(r){const q=r['Queue']||'';return q.match(/^7[0-9]{2}/)||q.toLowerCase().includes('tech');}
+
+/* ══════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════ */
+function renderReport(){
+  renderStats();renderIBTable();renderTechTable();renderOBTable();
+  syncHCDisplay();syncOvDisplay();
+}
+
+function renderStats(){
+  const ib=(csvData.inbound||[]).filter(isIBRow);
+  const ob=csvData.outbound||[];
+  const all=[...ib,...ob,...(csvData.inbound||[]).filter(isTechRow)];
+
+  // header pills
+  let tc=0,ta=0;
+  all.forEach(r=>{tc+=parseNum(r['Contacts queued']);ta+=parseNum(r['Contacts abandoned']);});
+  document.getElementById('rpt-queues-pill').textContent=all.length+' queues';
+  document.getElementById('rpt-contacts-pill').textContent=tc.toLocaleString()+' contacts';
+
+  /* ── INBOUND row ── */
+  let ibTc=0,ibTa=0,ibAht=0,ibAhtN=0,ibAns=0,ibAnsN=0;
+  ib.forEach(r=>{
+    ibTc+=parseNum(r['Contacts queued']);
+    ibTa+=parseNum(r['Contacts abandoned']);
+    const v=parseNum(r['Average agent interaction and customer hold time']||r['Average handle time']);
+    if(v>0){ibAht+=v;ibAhtN++;}
+    const a=parseNum(r['Average queue answer time']);
+    if(a>0){ibAns+=a;ibAnsN++;}
+  });
+  ibAht=ibAhtN>0?Math.round(ibAht/ibAhtN):0;
+  ibAns=ibAnsN>0?Math.round(ibAns/ibAnsN):0;
+  const ibAr=ibTc>0?((ibTa/ibTc)*100).toFixed(1):'0';
+  const ibAC=parseFloat(ibAr)<=5?'g':parseFloat(ibAr)<=10?'w':'b';
+
+  /* ── OUTBOUND row ── */
+  let obTc=0,obTa=0,obAht=0,obAhtN=0;
+  ob.forEach(r=>{
+    obTc+=parseNum(r['Contacts queued']);
+    obTa+=parseNum(r['Contacts abandoned']);
+    const v=parseNum(r['Average agent interaction and customer hold time']||r['Average handle time']);
+    if(v>0){obAht+=v;obAhtN++;}
+  });
+  obAht=obAhtN>0?Math.round(obAht/obAhtN):0;
+  const obAr=obTc>0?((obTa/obTc)*100).toFixed(1):'0';
+  const obAC=parseFloat(obAr)<=5?'g':parseFloat(obAr)<=10?'w':'b';
+
+  const rowLabel=txt=>`<div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px 2px;">${txt}</div>`;
+
+  let html='';
+
+  if(ib.length){
+    html+=rowLabel('Inbound (IB)');
+    html+=`<div class="stats-row" style="margin-bottom:14px;">
+      <div class="sc c-o"><div class="sc-label">Total Contacts</div><div class="sc-value">${ibTc.toLocaleString()}</div></div>
+      <div class="sc ${ibAC==='g'?'c-s':ibAC==='w'?'c-w':'c-d'}">
+        <div class="sc-label">Abandon Rate</div><div class="sc-value">${ibAr}%</div>
+        <span class="sc-badge bg-${ibAC}">${ibAC==='g'?'On Target':ibAC==='w'?'Watch':'Above Target'}</span>
+      </div>
+      <div class="sc ${ibAns<=30?'c-s':ibAns<=60?'c-w':'c-d'}"><div class="sc-label">Avg Answer Time</div><div class="sc-value">${fmtSec(ibAns)}</div></div>
+      <div class="sc c-p"><div class="sc-label">Avg Handle Time</div><div class="sc-value">${fmtSec(ibAht)}</div></div>
+      <div class="sc c-p"><div class="sc-label">Total Abandoned</div><div class="sc-value">${ibTa}</div></div>
+    </div>`;
+  }
+
+  if(ob.length){
+    html+=rowLabel('Outbound AD');
+    html+=`<div class="stats-row" style="margin-bottom:14px;">
+      <div class="sc c-o"><div class="sc-label">Total Contacts</div><div class="sc-value">${obTc.toLocaleString()}</div></div>
+      <div class="sc ${obAC==='g'?'c-s':obAC==='w'?'c-w':'c-d'}">
+        <div class="sc-label">Abandon Rate</div><div class="sc-value">${obAr}%</div>
+        <span class="sc-badge bg-${obAC}">${obAC==='g'?'On Target':obAC==='w'?'Watch':'Above Target'}</span>
+      </div>
+      <div class="sc c-p"><div class="sc-label">Avg Handle Time</div><div class="sc-value">${fmtSec(obAht)}</div></div>
+      <div class="sc c-p"><div class="sc-label">Total Abandoned</div><div class="sc-value">${obTa}</div></div>
+      <div class="sc c-p"><div class="sc-label">Active Queues</div><div class="sc-value">${ob.length}</div></div>
+    </div>`;
+  }
+
+  document.getElementById('stats-row').innerHTML=html;
+}
+
+/* Columns: Queue | No. Calls | Aban<20s | Aban%<20s | Aban>20s | Aban%>20s | Avg Aban Time | Avg Ans Time | AHT | ACW */
+function buildTable(rows,qHeader){
+  if(!rows||!rows.length)return '<p style="font-size:11px;color:var(--text3);">No data loaded.</p>';
+  let tq=0,ta20=0,taban=0;
+  rows.forEach(r=>{tq+=parseNum(r['Contacts queued']);ta20+=parseNum(r['Contacts abandoned in 20 seconds']);taban+=parseNum(r['Contacts abandoned']);});
+  const ta20p=tq>0?((ta20/tq)*100).toFixed(1):'0';
+  const tb20=Math.max(0,taban-ta20);
+  const tb20p=tq>0?((tb20/tq)*100).toFixed(1):'0';
+  let h=`<table class="dt"><thead><tr>
+    <th style="text-align:left;">${qHeader}</th>
+    <th>No. Calls</th>
+    <th>Aban &lt;20s</th><th>Aban% &lt;20s</th>
+    <th>Aban &gt;20s</th><th>Aban% &gt;20s</th>
+    <th>Avg Aban Time</th><th>Avg Ans Time</th>
+    <th>AHT</th><th>ACW</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const q=parseNum(r['Contacts queued']);
+    const a20=parseNum(r['Contacts abandoned in 20 seconds']);
+    const aban=parseNum(r['Contacts abandoned']);
+    const b20=Math.max(0,aban-a20);
+    const a20p=q>0?((a20/q)*100).toFixed(1):'0';
+    const b20p=q>0?((b20/q)*100).toFixed(1):'0';
+    h+=`<tr>
+      <td class="qname">${shortQ(r['Queue']||'')}</td>
+      <td class="mn">${q||'—'}</td>
+      <td class="mn">${a20||'—'}</td>
+      <td><span class="pill ${pillCls(parseFloat(a20p))}">${a20p}%</span></td>
+      <td class="mn">${b20||'—'}</td>
+      <td><span class="pill ${pillCls(parseFloat(b20p))}">${b20p}%</span></td>
+      <td class="mn">${fmtSec(parseNum(r['Average queue abandon time']))}</td>
+      <td class="mn">${fmtSec(parseNum(r['Average queue answer time']))}</td>
+      <td class="mn">${fmtSec(parseNum(r['Average agent interaction and customer hold time']||r['Average handle time']))}</td>
+      <td class="mn">${fmtSec(parseNum(r['Average after contact work time']))}</td>
+    </tr>`;
+  });
+  h+=`<tr class="tr-total">
+    <td>TOTAL / AVG</td><td class="mn">${tq}</td>
+    <td class="mn">${ta20}</td><td><span class="pill ${pillCls(parseFloat(ta20p))}">${ta20p}%</span></td>
+    <td class="mn">${tb20}</td><td><span class="pill ${pillCls(parseFloat(tb20p))}">${tb20p}%</span></td>
+    <td colspan="4" class="mn">—</td>
+  </tr></tbody></table>`;
+  return h;
+}
+function renderIBTable(){document.getElementById('tbl-inbound').innerHTML=buildTable((csvData.inbound||[]).filter(isIBRow),'Inbound Queue');}
+function renderTechTable(){document.getElementById('tbl-tech').innerHTML=buildTable((csvData.inbound||[]).filter(isTechRow),'Tech ETA Queue');}
+function renderOBTable(){document.getElementById('tbl-outbound').innerHTML=buildTable(csvData.outbound||[],'Outbound Queue');}
+
+/* ══════════════════════════════════════════
+   HEADCOUNT
+══════════════════════════════════════════ */
+function renderHCTable(){
+  const tbody=document.getElementById('hc-tbody');tbody.innerHTML='';
+  HC_GROUPS.forEach(g=>{
+    const d=hcData[g.key];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${g.label}</td>${HC_COLS.map(c=>`<td><input class="hc-inp" type="number" min="0" value="${d[c]}" data-group="${g.key}" data-col="${c}" oninput="hcInput(this)"></td>`).join('')}`;
+    tbody.appendChild(tr);
+  });
+  updateHCTotals();
+}
+function hcInput(el){
+  hcData[el.dataset.group][el.dataset.col]=el.value===''?'':parseInt(el.value)||0;
+  updateHCTotals();syncHCDisplay();
+}
+function updateHCTotals(){
+  const t={present:0,absent:0,expected:0,rd:0,leave:0};
+  HC_GROUPS.forEach(g=>{HC_COLS.forEach(c=>{t[c]+=(parseInt(hcData[g.key][c])||0);});});
+  HC_COLS.forEach(c=>{const el=document.getElementById('tot-'+c);if(el)el.textContent=t[c]||0;});
+  const att=t.expected>0?Math.round((t.present/t.expected)*100):0;
+  document.getElementById('hs-exp').textContent=t.expected;
+  document.getElementById('hs-pres').textContent=t.present;
+  document.getElementById('hs-abs').textContent=t.absent;
+  document.getElementById('hs-att').textContent=t.expected>0?att+'%':'—';
+}
+function syncHCDisplay(){
+  const t={present:0,absent:0,expected:0,rd:0,leave:0};
+  HC_GROUPS.forEach(g=>{HC_COLS.forEach(c=>{t[c]+=(parseInt(hcData[g.key][c])||0);});});
+  const att=t.expected>0?Math.round((t.present/t.expected)*100):0;
+  let h=`<table class="hct"><thead><tr><th>Group</th><th>Present</th><th>Absent</th><th>Expected</th><th>RD</th><th>Leave</th></tr></thead><tbody>`;
+  HC_GROUPS.forEach(g=>{
+    const d=hcData[g.key];
+    h+=`<tr><td>${g.label}</td>${HC_COLS.map(c=>`<td>${parseInt(d[c])||'—'}</td>`).join('')}</tr>`;
+  });
+  h+=`</tbody><tfoot><tr><td>Total</td>${HC_COLS.map(c=>`<td>${t[c]}</td>`).join('')}</tr></tfoot></table>`;
+  const sumH=`
+    <div class="hcs-card"><div class="hcs-label">Expected</div><div class="hcs-val cv-purple">${t.expected}</div></div>
+    <div class="hcs-card"><div class="hcs-label">Present</div><div class="hcs-val cv-success">${t.present}</div></div>
+    <div class="hcs-card"><div class="hcs-label">Absent</div><div class="hcs-val cv-warn">${t.absent}</div></div>
+    <div class="hcs-card"><div class="hcs-label">Attendance</div><div class="hcs-val cv-orange">${t.expected>0?att+'%':'—'}</div></div>`;
+  // Write to weekday targets
+  const wdTbl=document.getElementById('hc-display-table');
+  const wdSum=document.getElementById('hc-display-summary');
+  if(wdTbl)wdTbl.innerHTML=h;
+  if(wdSum)wdSum.innerHTML=sumH;
+  // Write to weekend targets
+  const weTbl=document.getElementById('hc-display-table-we');
+  const weSum=document.getElementById('hc-display-summary-we');
+  if(weTbl)weTbl.innerHTML=h;
+  if(weSum)weSum.innerHTML=sumH;
+}
+
+/* ══════════════════════════════════════════
+   OVERFLOW
+══════════════════════════════════════════ */
+function getIBQueueCalls(queuePrefix){
+  // Find a row in inbound matching the given queue number prefix
+  const rows=csvData.inbound||[];
+  const row=rows.find(r=>new RegExp('^'+queuePrefix+'\\s*[-–]','i').test(r['Queue']||''));
+  return row?parseNum(row['Contacts queued']):0;
+}
+function ovPct(count, denominator){
+  if(!denominator||!count)return '—';
+  return ((count/denominator)*100).toFixed(1)+'%';
+}
+function updateOverflow(){
+  const basic=parseInt(document.getElementById('ov-basic').value)||0;
+  const sr=parseInt(document.getElementById('ov-sr').value)||0;
+  const fw=parseInt(document.getElementById('ov-fw').value)||0;
+  // Denominators from inbound file
+  const basicIBCalls=getIBQueueCalls('100'); // Basic Bookings IB
+  const srIBCalls=getIBQueueCalls('105');    // Senior Bookings IB
+  document.getElementById('ov-basic-pct').textContent=ovPct(basic,basicIBCalls);
+  document.getElementById('ov-sr-pct').textContent=ovPct(sr,srIBCalls);
+  document.getElementById('ov-fw-pct').textContent=ovPct(fw,basicIBCalls);
+  syncOvDisplay();
+}
+function syncOvDisplay(){
+  const basic=parseInt(document.getElementById('ov-basic').value)||0;
+  const sr=parseInt(document.getElementById('ov-sr').value)||0;
+  const fw=parseInt(document.getElementById('ov-fw').value)||0;
+  const basicIBCalls=getIBQueueCalls('100');
+  const srIBCalls=getIBQueueCalls('105');
+  document.getElementById('ov-display').innerHTML=`
+    <div class="ov-display-row">
+      <div class="ov-dcard"><div class="ov-dcard-brand">Basic</div><div class="ov-dcard-val">${basic}</div><div class="ov-dcard-pct">${ovPct(basic,basicIBCalls)}</div></div>
+      <div class="ov-dcard"><div class="ov-dcard-brand">Sr. Bookings</div><div class="ov-dcard-val">${sr}</div><div class="ov-dcard-pct">${ovPct(sr,srIBCalls)}</div></div>
+      <div class="ov-dcard"><div class="ov-dcard-brand">Furtherworks</div><div class="ov-dcard-val">${fw}</div><div class="ov-dcard-pct">${ovPct(fw,basicIBCalls)}</div></div>
+    </div>`;
+  const cbB=parseInt(document.getElementById('cb-basic').value)||0;
+  const cbA=parseInt(document.getElementById('cb-after').value)||0;
+  document.getElementById('cb-display').innerHTML=`
+    <div class="ov-display-row-2">
+      <div class="ov-dcard"><div class="ov-dcard-brand">Basic</div><div class="ov-dcard-val">${cbB}</div></div>
+      <div class="ov-dcard"><div class="ov-dcard-brand">Afterhours</div><div class="ov-dcard-val">${cbA}</div></div>
+    </div>`;
+  document.getElementById('remarks-display').textContent=document.getElementById('hc-remarks').value||'—';
+}
+
+/* ══════════════════════════════════════════
+   LOCAL RULE-BASED ANALYSIS
+══════════════════════════════════════════ */
+function generateAnalysis(){
+  document.getElementById('gen-btn').disabled=true;
+  document.getElementById('regen-btn').disabled=true;
+
+  const ib=(csvData.inbound||[]).filter(isIBRow);
+  const ob=csvData.outbound||[];
+  const supNotes=document.getElementById('supervisor-notes').value.trim();
+
+  if(!ib.length&&!ob.length){
+    document.getElementById('analysis-content').innerHTML=`<div style="padding:13px 16px;font-size:11px;color:var(--text3);">Upload inbound or outbound CSV files first to generate analysis.</div>`;
+    document.getElementById('gen-btn').disabled=false;
+    document.getElementById('regen-btn').disabled=false;
+    return;
+  }
+
+  /* ── helpers ── */
+  const pN=v=>{if(!v||v==='-'||v==='')return 0;return parseFloat(String(v).replace(/[^0-9.]/g,''))||0;};
+  const aRate=(r)=>{const q=pN(r['Contacts queued']);return q>0?(pN(r['Contacts abandoned'])/q)*100:0;};
+  const ansT=(r)=>pN(r['Average queue answer time']);
+  const name=(r)=>r['Queue']||'';
+  const sQ2=q=>q.replace(/^\d+\s*[-–]\s*/,'').replace(/\bInbound\b\s*/i,'').replace(/\bOutbound\b\s*/i,'').replace(/\bBookings\b/i,'Bookings').replace(/\bElectrical\b\s*/i,'Electrical ').replace(/\bSafety\b\s*/i,'').replace(/PH Tech Agent\s*[-–]\s*/i,'').replace(/\bAfter Hours\b/i,'After Hours').trim();
+
+  /* ── IB analysis ── */
+  let ibSummary='', ibDetail='';
+  if(ib.length){
+    let tc=0,ta=0,highAban=[],longAns=[],cleanQueues=[],abanOk=true;
+    ib.forEach(r=>{
+      tc+=pN(r['Contacts queued']);
+      ta+=pN(r['Contacts abandoned']);
+      const ar=aRate(r), at=ansT(r), n=sQ2(name(r));
+      if(ar>10) highAban.push(n);
+      else if(ar<=5) cleanQueues.push(n);
+      if(at>60) longAns.push(n);
+    });
+    const overallAban=tc>0?(ta/tc)*100:0;
+    abanOk=overallAban<=7;
+
+    // Overall inbound sentence
+    if(abanOk){
+      ibSummary=`Inbound queues performed within acceptable levels for the day, with the overall abandon rate remaining below the target threshold.`;
+    } else {
+      ibSummary=`Inbound queues recorded an elevated abandon rate today, indicating higher-than-expected call drop-off across the board.`;
+    }
+
+    // Queue-level detail
+    const parts=[];
+    if(highAban.length){
+      parts.push(`${highAban.join(' and ')} ${highAban.length>1?'queues recorded':'queue recorded'} notably higher abandonment, which may warrant monitoring in the next shift.`);
+    }
+    if(longAns.length){
+      parts.push(`${longAns.join(' and ')} ${longAns.length>1?'queues experienced':'queue experienced'} longer average answer times compared to standard, suggesting potential staffing pressure during peak periods.`);
+    }
+    if(cleanQueues.length&&!highAban.length){
+      parts.push(`${cleanQueues.length>2?'Most queues, including':'Queues including'} ${cleanQueues.slice(0,3).join(', ')}, maintained clean abandon rates throughout the day.`);
+    }
+    if(!parts.length){
+      parts.push(`All inbound queues operated within normal parameters with no significant anomalies observed.`);
+    }
+    ibDetail=parts.join(' ');
+  }
+
+  /* ── OB analysis ── */
+  let obSummary='';
+  if(ob.length){
+    let tc=0,highAbanOB=[],normalOB=[];
+    ob.forEach(r=>{
+      tc+=pN(r['Contacts queued']);
+      const ar=aRate(r), n=sQ2(name(r));
+      if(ar>5) highAbanOB.push(n);
+      else normalOB.push(n);
+    });
+    const qCount=ob.length;
+    if(highAbanOB.length===0){
+      obSummary=`Outbound AD campaigns completed the day with satisfactory performance across all ${qCount>1?qCount+' active queues':'the active queue'}, with abandon rates maintained within acceptable limits.`;
+    } else {
+      obSummary=`Outbound AD campaigns ${normalOB.length?'generally performed well, though ':'saw mixed results today, with '}${highAbanOB.join(' and ')} ${highAbanOB.length>1?'showing':'showing'} slightly elevated abandonment compared to the rest of the outbound traffic.`;
+    }
+  }
+
+  /* ── Headcount context ── */
+  const hcT={present:0,absent:0,expected:0};
+  HC_GROUPS.forEach(g=>{['present','absent','expected'].forEach(c=>{hcT[c]+=(parseInt(hcData[g.key][c])||0);});});
+  let hcNote='';
+  if(hcT.expected>0){
+    const att=Math.round((hcT.present/hcT.expected)*100);
+    if(hcT.absent===0) hcNote=`Full attendance was recorded for the day with no absenteeism noted.`;
+    else if(att>=90) hcNote=`Attendance remained strong for the day with only minor absenteeism recorded.`;
+    else if(att>=80) hcNote=`Attendance was slightly below full strength, with a few agents absent, which may have contributed to queue pressure.`;
+    else hcNote=`Reduced headcount was observed today, which likely impacted queue handling capacity across some teams.`;
+  }
+
+  /* ── Supervisor notes — blend into summary naturally ── */
+  let snBlend='';
+  if(supNotes){
+    // Weave it in as a natural sentence rather than appending verbatim
+    const s=supNotes.trim().replace(/\.?\s*$/,'');
+    snBlend=` It is also noted that ${s.charAt(0).toLowerCase()+s.slice(1)}.`;
+  }
+
+  /* ── Assemble notes ── */
+  const notes=[
+    {
+      type:'summary',
+      label:'Overall Summary',
+      text:(hcNote||'The team handled inbound and outbound contacts for the day.')+' '+(ib.length&&ob.length?'Both inbound and outbound AD queues were active today.':ib.length?'Inbound queues were active today.':'Outbound AD campaigns were active today.')+snBlend
+    },
+    ...(ib.length?[{type:'inbound',label:'Inbound Performance',text:ibSummary+' '+ibDetail}]:[]),
+    ...(ob.length?[{type:'outbound',label:'Outbound (AD) Performance',text:obSummary}]:[]),
+  ];
+
+  lastNotes=notes;
+  renderNotes(notes);
+  document.getElementById('gen-btn').disabled=false;
+  document.getElementById('regen-btn').disabled=false;
+}
+
+function renderNotes(notes){
+  let h='<div class="analysis-body"><div class="notes-grid">';
+  notes.forEach(n=>{
+    const txt=n.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n•\s*/g,'<br>• ');
+    h+=`<div class="note-block ${n.type}"><div class="note-type">${n.label}</div><div class="note-text">${txt}</div></div>`;
+  });
+  h+='</div></div>';
+  // Write to whichever content div is active
+  const wdContent=document.getElementById('analysis-content');
+  const weContent=document.getElementById('analysis-content-we');
+  if(wdContent)wdContent.innerHTML=h;
+  if(weContent)weContent.innerHTML=h;
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR TOGGLE
+══════════════════════════════════════════ */
+function toggleSb(headEl){
+  const body=headEl.nextElementSibling;
+  const toggle=headEl.querySelector('.sb-head-toggle');
+  const collapsed=body.classList.toggle('collapsed');
+  if(toggle)toggle.classList.toggle('collapsed',collapsed);
+}
+
+/* ══════════════════════════════════════════
+   COPY HEADER
+══════════════════════════════════════════ */
+function updateCopyHeader(){
+  const iso=document.getElementById('report-date').value;
+  let dateStr='';
+  if(iso){
+    const d=new Date(iso+'T12:00:00');
+    dateStr=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  }
+  const text=`Workforce End-of-Day Report (Phones) | ${dateStr||'—'}`;
+  const el=document.getElementById('copy-header-text');
+  if(el)el.textContent=text;
+}
+
+function copyHeader(){
+  const text=document.getElementById('copy-header-text').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const s=document.getElementById('copy-status');
+    s.style.opacity='1';
+    setTimeout(()=>s.style.opacity='0',2200);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+  });
+}
+
+/* ══════════════════════════════════════════
+   SCREENSHOT — full report, no clipping
+══════════════════════════════════════════ */
+async function takeScreenshot(){
+  syncHCDisplay();syncOvDisplay();
+  document.getElementById('modal-overlay').style.display='flex';
+  document.getElementById('modal-sub').textContent='Capturing full report...';
+  document.getElementById('modal-body').innerHTML='<div class="modal-progress"><div class="spinner" style="margin:0 auto 10px;width:20px;height:20px;border-width:3px;"></div>Rendering all tables and sections...</div>';
+  document.getElementById('modal-actions').style.display='none';
+  screenshotDataUrl=null;
+
+  // Hide buttons that shouldn't appear in export
+  const regenBtn=document.getElementById('regen-btn');
+  const regenBtnWe=document.getElementById('regen-btn-we');
+  if(regenBtn)regenBtn.style.display='none';
+  if(regenBtnWe)regenBtnWe.style.display='none';
+  document.querySelectorAll('.no-screenshot').forEach(el=>el.style.display='none');
+
+  const target=document.getElementById('report-area');
+  const col=target.parentElement; // report-col
+
+  // Temporarily remove overflow/height constraints so html2canvas sees full content
+  const prevColOverflow=col.style.overflow;
+  const prevColHeight=col.style.height;
+  const prevColMaxH=col.style.maxHeight;
+  col.style.overflow='visible';
+  col.style.height='auto';
+  col.style.maxHeight='none';
+
+  // Fix target width
+  const prevW=target.style.width;
+  const prevMW=target.style.maxWidth;
+  target.style.width='780px';
+  target.style.maxWidth='780px';
+
+  await new Promise(r=>setTimeout(r,300));
+
+  try{
+    const canvas=await html2canvas(target,{
+      backgroundColor:'#f8f7fc',
+      scale:2,
+      useCORS:true,
+      logging:false,
+      x:0,y:0,
+      scrollX:0,scrollY:0,
+      width:780,
+      height:target.scrollHeight,
+      windowWidth:780
+    });
+    screenshotDataUrl=canvas.toDataURL('image/png');
+    document.getElementById('modal-sub').textContent='Image ready — copy or download to attach to your email.';
+    document.getElementById('modal-body').innerHTML=`<div class="modal-img-wrap"><img src="${screenshotDataUrl}" style="width:100%;display:block;" alt="EOD Report"></div>`;
+    document.getElementById('modal-actions').style.display='flex';
+  }catch(e){
+    document.getElementById('modal-body').innerHTML=`<div style="padding:13px;color:var(--danger);font-size:11px;">⚠ Failed: ${e.message}</div>`;
+    document.getElementById('modal-actions').style.display='flex';
+  } finally {
+    col.style.overflow=prevColOverflow;
+    col.style.height=prevColHeight;
+    col.style.maxHeight=prevColMaxH;
+    target.style.width=prevW;
+    target.style.maxWidth=prevMW;
+    if(regenBtn)regenBtn.style.display='';
+    if(regenBtnWe)regenBtnWe.style.display='';
+    document.querySelectorAll('.no-screenshot').forEach(el=>el.style.display='');
+  }
+}
+function downloadImage(){
+  if(!screenshotDataUrl)return;
+  const ds=document.getElementById('report-date').value||new Date().toISOString().slice(0,10);
+  const a=document.createElement('a');a.href=screenshotDataUrl;a.download=`EOD-Report-${ds}.png`;a.click();
+}
+
+async function copyImageToClipboard(){
+  if(!screenshotDataUrl)return;
+  try{
+    const res=await fetch(screenshotDataUrl);
+    const blob=await res.blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    const btn=document.getElementById('copy-img-btn');
+    btn.textContent='✓ Copied!';
+    btn.style.color='var(--success)';
+    setTimeout(()=>{btn.textContent='⧉ Copy Image';btn.style.color='';},2500);
+  }catch(e){
+    alert('Could not copy image automatically. Please right-click the image preview and copy it manually.');
+  }
+}
+function closeModal(){document.getElementById('modal-overlay').style.display='none';}
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+/* ══════════════════════════════════════════
+   SCHEDULING MODE
+══════════════════════════════════════════ */
+const SC_DATA={disp:null,screenshot:null};
+let scExtracted={frt:'',trt:'',assigned:''};
+const SC_HC_GROUPS=[{k:'sms',l:'SMS'},{k:'special',l:'Special Task'},{k:'email',l:'Email'}];
+let scHcData={sms:{actual:'',expected:'',leave:'',rd:''},special:{actual:'',expected:'',leave:'',rd:''},email:{actual:'',expected:'',leave:'',rd:''}};
+
+function onSchedDate(){
+  const iso=document.getElementById('sched-date').value;
+  if(!iso)return;
+  const d=new Date(iso+'T12:00:00');
+  const fmt=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('sc-date-pill').textContent=fmt;
+  document.getElementById('sc-foot-date').textContent=fmt;
+  document.getElementById('sc-cp-txt').textContent=`Scheduling End-of-Day Report (Tenant Support & Front App) | ${fmt}`;
+  // Auto-set disp from to Monday of the week
+  const dates=getWeekDates(iso);
+  const dispFrom=document.getElementById('sc-disp-from');
+  const dispTo=document.getElementById('sc-disp-to');
+  if(dispFrom&&dates.length) dispFrom.value=dates[0];
+  if(dispTo) dispTo.value=iso;
+  // Load saved data for this date
+  scLoadDay(iso);
+  renderWeeklyBreakdown();
+  scRender();
+}
+
+function scInitDate(){
+  const iso=new Date().toISOString().slice(0,10);
+  document.getElementById('sched-date').value=iso;
+  onSchedDate();
+}
+
+const SC_ICONS={zendesk:'📧',sms:'💬',rty:'🔄',disp:'📋',throughput:'📊',sla:'🎯',screenshot:'🖼️'};
+
+function scUpload(e,key){
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('sc-fn-'+key).textContent=file.name;
+  document.getElementById('sc-card-'+key).classList.add('ok');
+  document.getElementById('sc-card-'+key).querySelector('.up-icon').textContent='✅';
+
+  if(key==='zendesk'){
+    const reader=new FileReader();
+    reader.onload=async function(ev){
+      try{
+        const zip=await JSZip.loadAsync(ev.target.result);
+        const parsed={};
+        for(const [name,zfile] of Object.entries(zip.files)){
+          if(zfile.dir)continue;
+          const txt=await zfile.async('text');
+          parsed[name]=Papa.parse(txt,{header:true,skipEmptyLines:true}).data;
+        }
+        SC_DATA.zendesk=parsed;
+      }catch(err){
+        console.error('ZIP parse error:',err);
+        SC_DATA.zendesk={};
+      }
+      scShowReady();
+    };
+    reader.readAsArrayBuffer(file);
+  } else if(key==='screenshot'){
+    const reader=new FileReader();
+    reader.onload=async ev=>{
+      const base64=ev.target.result;
+      scShowReady();
+      // Show loading state AFTER scShowReady renders the table
+      await new Promise(r=>setTimeout(r,100));
+      const smsEl=document.getElementById('sc-sms-display');
+      if(smsEl)smsEl.innerHTML+=`<div id="sc-extract-loading" style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:11px;color:var(--text3);"><div class="sp" style="width:13px;height:13px;border-width:2px;"></div>Reading screenshot with AI — extracting FRT, TRT & Assigned Conversations...</div>`;
+      await scExtractFromImage(base64);
+    };
+    reader.readAsDataURL(file);
+  } else if(key==='screenshot'){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      SC_DATA.screenshot=ev.target.result;
+      document.getElementById('sc-fn-screenshot').textContent='✅ Uploaded — displayed in SMS section';
+      scShowReady();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    Papa.parse(file,{header:true,skipEmptyLines:true,encoding:'UTF-8',complete:res=>{
+      if(res.data.length&&res.meta.fields&&res.meta.fields[0].charCodeAt(0)===0xFEFF){
+        const fields=res.meta.fields;
+        fields[0]=fields[0].slice(1);
+        res.data=res.data.map(r=>{const clean={};fields.forEach((f,i)=>{clean[f]=Object.values(r)[i];});return clean;});
+      }
+      SC_DATA[key]=res.data;
+      scShowReady();
+    }});
+  }
+}
+
+function scShowReady(){
+  const any=Object.values(SC_DATA).some(d=>d!==null);
+  if(any){
+    document.getElementById('sched-empty').style.display='none';
+    document.getElementById('sched-report-area').style.display='block';
+    document.getElementById('sc-cp-panel').style.display='block';
+    document.getElementById('gen-btn').style.display='inline-flex';
+    document.getElementById('ss-btn').style.display='inline-flex';
+  }
+  scRender();
+}
+
+function scRender(){
+  scRenderStats();
+  scRenderAttendance();
+  scRenderSMS();
+  scRenderEmail();
+  scRenderRTY();
+  scRenderDisp();
+  scRenderSLA();
+  scRenderRates();
+  scRenderOT();
+  scRenderSummaries();
+  // Update contacts pill
+  const smsTotal=parseInt(document.getElementById('sc-sms-opening').value)||0;
+  const emailOpening=SC_DATA.throughput?parseInt(SC_DATA.throughput[0]?.['Opening backlog']||0):0;
+  document.getElementById('sc-contacts-pill').textContent=`SMS Opening: ${smsTotal} · Email Opening: ${emailOpening}`;
+}
+
+// Headcount table
+function scRenderHCTable(){
+  const tb=document.getElementById('sc-hc-tbody');if(!tb)return;tb.innerHTML='';
+  SC_HC_GROUPS.forEach(g=>{
+    const d=scHcData[g.k];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-size:10px;font-weight:500;color:var(--text);">${g.l}</td>
+      <td><input class="hci" type="number" min="0" value="${d.actual}" data-g="${g.k}" data-c="actual" oninput="scHcIn(this)"></td>
+      <td><input class="hci" type="number" min="0" value="${d.expected}" data-g="${g.k}" data-c="expected" oninput="scHcIn(this)"></td>
+      <td><input class="hci" type="number" min="0" value="${d.leave}" data-g="${g.k}" data-c="leave" oninput="scHcIn(this)"></td>
+      <td><input class="hci" type="number" min="0" value="${d.rd}" data-g="${g.k}" data-c="rd" oninput="scHcIn(this)"></td>`;
+    tb.appendChild(tr);
+  });
+  scUpdHCTotals();
+}
+function scHcIn(el){
+  scHcData[el.dataset.g][el.dataset.c]=el.value===''?'':parseInt(el.value)||0;
+  scUpdHCTotals();scRenderAttendance();
+}
+function scUpdHCTotals(){
+  let ta=0,te=0,tl=0,tr=0;
+  SC_HC_GROUPS.forEach(g=>{ta+=parseInt(scHcData[g.k].actual)||0;te+=parseInt(scHcData[g.k].expected)||0;tl+=parseInt(scHcData[g.k].leave)||0;tr+=parseInt(scHcData[g.k].rd)||0;});
+  ['actual','exp','leave','rd'].forEach((x,i)=>{const el=document.getElementById(`sc-tot-${x}`);if(el)el.textContent=[ta,te,tl,tr][i];});
+}
+
+function scRenderStats(){
+  const el=document.getElementById('sc-stats-row');if(!el)return;
+  const smsReceived=parseInt(document.getElementById('sc-sms-received')?.value)||0;
+  const smsRemaining=parseInt(document.getElementById('sc-sms-remaining')?.value)||0;
+  const emailOpening=parseInt(document.getElementById('sc-email-opening')?.value)||0;
+  const emailHandled=parseInt(document.getElementById('sc-email-handled')?.value)||0;
+  const slaPct=document.getElementById('sc-sla-pct')?.value||'';
+  const slaNum=parseFloat(slaPct);
+  const slaC=slaPct?(slaNum>=80?'c-s':slaNum>=60?'c-w':'c-d'):'c-p';
+  const slaB=slaPct?(slaNum>=80?'bg':'bw'):'';
+  el.innerHTML=`
+    <div class="sc co"><div class="sc-label">SMS Received</div><div class="sc-value">${smsReceived||'—'}</div></div>
+    <div class="sc cp"><div class="sc-label">SMS Remaining</div><div class="sc-value">${smsRemaining||'—'}</div></div>
+    <div class="sc co"><div class="sc-label">Email Opening Backlog</div><div class="sc-value">${emailOpening||'—'}</div></div>
+    <div class="sc cp"><div class="sc-label">Tickets Handled</div><div class="sc-value">${emailHandled||'—'}</div></div>
+    <div class="sc ${slaC}"><div class="sc-label">Email SLA</div><div class="sc-value">${slaPct?slaPct+'%':'—'}</div>${slaPct&&slaB?`<span class="sc-badge ${slaNum>=80?'badge-good':'badge-warn'}">${slaNum>=80?'On Target':'Watch'}</span>`:''}</div>`;
+}
+
+function scRenderAttendance(){
+  const el=document.getElementById('sc-attendance-display');if(!el)return;
+  let h=`<table class="dt"><thead><tr><th style="text-align:left;">Team</th><th>Actual</th><th>Expected</th><th>Leave</th><th>Rest Day</th></tr></thead><tbody>`;
+  let ta=0,te=0,tl=0,tr=0;
+  SC_HC_GROUPS.forEach(g=>{
+    const d=scHcData[g.k];
+    const actual=parseInt(d.actual)||0,exp=parseInt(d.expected)||0,leave=parseInt(d.leave)||0,rd=parseInt(d.rd)||0;
+    ta+=actual;te+=exp;tl+=leave;tr+=rd;
+    h+=`<tr><td class="qn">${g.l}</td><td class="mn">${actual||'—'}</td><td class="mn">${exp||'—'}</td><td class="mn">${leave||'—'}</td><td class="mn">${rd||'—'}</td></tr>`;
+  });
+  h+=`<tr class="tot"><td>TOTAL</td><td class="mn">${ta}</td><td class="mn">${te}</td><td class="mn">${tl}</td><td class="mn">${tr}</td></tr></tbody></table>`;
+  el.innerHTML=h;
+}
+
+function scRenderSMS(){
+  const el=document.getElementById('sc-sms-display');if(!el)return;
+  const received=parseInt(document.getElementById('sc-sms-received')?.value)||0;
+  const closed=parseInt(document.getElementById('sc-sms-closed').value)||0;
+  const remaining=parseInt(document.getElementById('sc-sms-remaining').value)||0;
+  const frt='—';
+  const trt='—';
+  const assigned=0;
+  const v=n=>n||'—';
+  el.innerHTML=`<table class="dt"><thead><tr>
+    <th style="text-align:left;">Task</th><th>Received</th><th>Closed</th><th>Remaining</th><th>FRT</th><th>TRT (avg)</th><th>Assigned Conv.</th>
+  </tr></thead><tbody>
+    <tr>
+      <td class="qn">SMS</td>
+      <td class="mn">${v(received)}</td>
+      <td class="mn">${v(closed)}</td>
+      <td class="mn">${v(remaining)}</td>
+      <td colspan="3" style="text-align:center;font-size:10px;color:var(--text3);">${SC_DATA.screenshot?'See screenshot below':'Upload Key Metrics Screenshot →'}</td>
+    </tr>
+  </tbody></table>`;
+  if(SC_DATA.screenshot){
+    el.innerHTML+=`<div style="margin-top:10px;"><div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Key Metrics — FRT · TRT · Assigned Conversations</div><img src="${SC_DATA.screenshot}" style="width:100%;border-radius:6px;border:1px solid var(--border);display:block;"></div>`;
+  } else {
+    el.innerHTML+=`<div style="margin-top:6px;padding:8px 10px;background:var(--orange-light);border-radius:6px;font-size:10px;color:var(--orange-dark);">📷 Upload the Key Metrics Screenshot in the sidebar to show FRT, TRT & Assigned Conversations</div>`;
+  }
+}
+
+
+function scRenderEmail(){
+  const el=document.getElementById('sc-email-display');if(!el)return;
+  const opening=parseInt(document.getElementById('sc-email-opening')?.value)||0;
+  const received=parseInt(document.getElementById('sc-email-received')?.value)||0;
+  const closed=parseInt(document.getElementById('sc-email-closed')?.value)||0;
+  const remaining=parseInt(document.getElementById('sc-email-remaining')?.value)||0;
+  const pending=parseInt(document.getElementById('sc-email-pending')?.value)||0;
+  const handled=parseInt(document.getElementById('sc-email-handled')?.value)||0;
+  const slaPct=document.getElementById('sc-sla-pct')?.value||'';
+  const pctNum=parseFloat(slaPct);
+  const slaColor=slaPct?(pctNum>=80?'var(--ok)':pctNum>=60?'var(--wn)':'var(--er)'):'var(--text3)';
+  const v=n=>n||'—';
+  el.innerHTML=`<table class="dt"><thead><tr>
+    <th style="text-align:left;">Task</th><th>Opening Backlog</th><th>Received</th><th>Closed</th><th>Remaining</th><th>Pending</th><th>Tickets Handled</th><th>SLA</th>
+  </tr></thead><tbody>
+    <tr>
+      <td class="qn">EMAIL</td>
+      <td class="mn">${v(opening)}</td>
+      <td class="mn">${v(received)}</td>
+      <td class="mn">${v(closed)}</td>
+      <td class="mn">${v(remaining)}</td>
+      <td class="mn">${v(pending)}</td>
+      <td class="mn">${v(handled)}</td>
+      <td><span class="pl ${pctNum>=80?'plg':pctNum>=60?'plw':slaPct?'plb':'pill-n'}">${slaPct?slaPct+'%':'—'}</span></td>
+    </tr>
+  </tbody></table>`;
+}
+
+
+function scRenderRTY(){
+  const el=document.getElementById('sc-rty-display');if(!el)return;
+  const opening=parseInt(document.getElementById('sc-rty-opening')?.value)||0;
+  const received=parseInt(document.getElementById('sc-rty-received')?.value)||0;
+  const touched=parseInt(document.getElementById('sc-rty-touched').value)||0;
+  const remaining=parseInt(document.getElementById('sc-rty-remaining').value)||0;
+  const v=n=>n||'—';
+  el.innerHTML=`<table class="dt"><thead><tr>
+    <th style="text-align:left;">Task</th><th>Opening SMS</th><th>Received</th><th>SMS Touched</th><th>Remaining</th>
+  </tr></thead><tbody>
+    <tr>
+      <td class="qn">Special Task</td>
+      <td class="mn">${v(opening)}</td>
+      <td class="mn">${v(received)}</td>
+      <td class="mn">${v(touched)}</td>
+      <td class="mn">${v(remaining)}</td>
+    </tr>
+  </tbody></table>`;
+}
+
+
+function scRenderDisp(){
+  const el=document.getElementById('sc-disp-display');if(!el)return;
+  const badge=document.getElementById('sc-disp-badge');
+
+  if(!SC_DATA.disp){
+    el.innerHTML='<p style="font-size:11px;color:var(--text3);">Upload Disposition Code CSV to view breakdown.</p>';
+    if(badge)badge.textContent='—';
+    return;
+  }
+
+  // Show available date range from the file
+  const smsAll=SC_DATA.disp.filter(r=>(r[srcTypeKey]||'').trim().toUpperCase()==='SMS');
+  const allFileDates=smsAll.map(r=>(r[dateKey]||'').trim()).filter(Boolean);
+  const uniqueDates=[...new Set(allFileDates)];
+  const noteEl=document.getElementById('sc-disp-range-note');
+  if(noteEl&&uniqueDates.length){
+    // Find min/max date from file
+    const parsed=uniqueDates.map(s=>{const p=s.split('/');return p.length===3?new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])):null;}).filter(Boolean);
+    const minD=new Date(Math.min(...parsed));const maxD=new Date(Math.max(...parsed));
+    const fmt=d=>d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+    noteEl.textContent=`File contains: ${fmt(minD)} – ${fmt(maxD)}`;
+  }
+
+  const fromVal=document.getElementById('sc-disp-from')?.value;
+  const toVal=document.getElementById('sc-disp-to')?.value;
+
+  if(!fromVal||!toVal){
+    el.innerHTML='<p style="font-size:11px;color:var(--text3);">Select a date range (From / To) in the sidebar to view the breakdown.</p>';
+    if(badge)badge.textContent='Select range';
+    return;
+  }
+
+  // Build array of dates in range
+  const dates=[];
+  let cur=new Date(fromVal+'T12:00:00');
+  const toDate=new Date(toVal+'T12:00:00');
+  while(cur<=toDate){dates.push(new Date(cur));cur.setDate(cur.getDate()+1);}
+
+  if(dates.length===0){el.innerHTML='<p style="font-size:11px;color:var(--text3);">Invalid date range.</p>';return;}
+  if(dates.length>14){el.innerHTML='<p style="font-size:11px;color:var(--text3);">Please select 14 days or fewer.</p>';return;}
+
+  if(badge)badge.textContent=`${dates[0].toLocaleDateString('en-AU',{day:'numeric',month:'short'})} – ${dates[dates.length-1].toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`;
+
+  // CSV date format is D/MM/YYYY (day no leading zero, month zero-padded)
+  // Build lookup keys matching CSV format exactly
+  function toCSVKey(d){
+    const day=d.getDate(); // no leading zero
+    const month=String(d.getMonth()+1).padStart(2,'0'); // zero-padded month
+    const year=d.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  const dateKeys=dates.map(toCSVKey);
+  const colLabels=dates.map(d=>d.toLocaleDateString('en-AU',{day:'2-digit',month:'short'}).replace(' ','-'));
+
+  // Filter SMS only
+  // Robust SMS filter — handles BOM, whitespace, CRLF in column names
+  const dispKeys=SC_DATA.disp.length?Object.keys(SC_DATA.disp[0]):[];
+  const srcTypeKey=dispKeys.find(k=>k.replace(/[\s\r\n\ufeff]/g,'').includes('ConversationSourceType'))||'Conversation Source Type';
+  const dateKey=dispKeys.find(k=>k.replace(/[\s\r\n\ufeff]/g,'').includes('ConversationDate'))||'Conversation Date';
+  const codeKey=dispKeys.find(k=>k.replace(/[\s\r\n\ufeff]/g,'').includes('DispositionCode'))||'Disposition Code';
+  const smsRows=SC_DATA.disp.filter(r=>(r[srcTypeKey]||'').trim().toUpperCase()==='SMS');
+
+  // Build codeMap: code → {csvDateKey: count}
+  const codeMap={};
+  smsRows.forEach(r=>{
+    const rawDate=(r[dateKey]||'').trim();
+    if(!dateKeys.includes(rawDate))return;
+    const code=(r[codeKey]||'Unknown').trim();
+    if(!codeMap[code])codeMap[code]={};
+    codeMap[code][rawDate]=(codeMap[code][rawDate]||0)+1;
+  });
+
+  const sortedCodes=Object.entries(codeMap)
+    .map(([code,days])=>({code,days,total:Object.values(days).reduce((s,v)=>s+v,0)}))
+    .sort((a,b)=>b.total-a.total);
+
+  if(!sortedCodes.length){
+    const fromFmt=dates[0].toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+    const toFmt=dates[dates.length-1].toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+    el.innerHTML=`<div style="padding:8px 0;">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:6px;">No SMS disposition codes found for <strong>${fromFmt} – ${toFmt}</strong>.</p>
+      <p style="font-size:10px;color:var(--text3);">The uploaded file only contains data up to the dates available in SharePoint. Check that your selected range matches dates in the file.</p>
+    </div>`;
+    return;
+  }
+
+  const thStyle='font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;padding:5px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2);';
+
+  let h=`<div style="overflow-x:auto;"><table class="dt" style="min-width:${300+dates.length*70}px;">
+    <thead><tr>
+      <th style="${thStyle}text-align:left;min-width:200px;">Disposition Code</th>
+      ${colLabels.map(l=>`<th style="${thStyle}">${l}</th>`).join('')}
+      <th style="${thStyle}background:var(--surface3);">Total</th>
+    </tr></thead><tbody>`;
+
+  sortedCodes.forEach(({code,days,total})=>{
+    h+=`<tr>
+      <td class="qn">${code}</td>
+      ${dateKeys.map(dk=>`<td class="mn">${days[dk]||'—'}</td>`).join('')}
+      <td class="mn" style="font-weight:600;background:var(--surface3);">${total}</td>
+    </tr>`;
+  });
+
+  // Grand total row
+  const dayTotals=dateKeys.map(dk=>sortedCodes.reduce((s,{days})=>s+(days[dk]||0),0));
+  const grandTotal=sortedCodes.reduce((s,{total})=>s+total,0);
+  h+=`<tr class="tot">
+    <td>GRAND TOTAL</td>
+    ${dayTotals.map(t=>`<td class="mn">${t||'—'}</td>`).join('')}
+    <td class="mn" style="background:var(--surface3);">${grandTotal}</td>
+  </tr></tbody></table></div>`;
+
+  el.innerHTML=h;
+}
+
+
+function scRenderSLA(){
+  const el=document.getElementById('sc-sla-display');if(!el)return;
+  const slaPct=document.getElementById('sc-sla-pct')?.value||'';
+  const pctNum=parseFloat(slaPct);
+  const slaColor=slaPct?(pctNum>=80?'var(--ok)':pctNum>=60?'var(--wn)':'var(--er)'):'var(--text3)';
+  el.innerHTML=`<div style="text-align:center;padding:18px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);max-width:200px;">
+    <div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Service Level %</div>
+    <div style="font-size:40px;font-weight:700;color:${slaColor};font-family:monospace;">${slaPct?slaPct+'%':'—'}</div>
+  </div>`;
+}
+
+
+function scRenderRates(){
+  const el=document.getElementById('sc-rates-display');if(!el)return;
+  const smsRate=document.getElementById('sc-sms-resolved-rate')?.value||'';
+  const emailRate=document.getElementById('sc-email-handled-rate')?.value||'';
+
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">SMS Resolved Rate</div>
+      <div style="font-size:28px;font-weight:700;color:${smsRate?'var(--ok)':'var(--text3)'};font-family:monospace;">${smsRate?smsRate+'%':'—'}</div>
+    </div>
+    <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Email Handled Rate</div>
+      <div style="font-size:28px;font-weight:700;color:${emailRate?'var(--ok)':'var(--text3)'};font-family:monospace;">${emailRate?emailRate+'%':'—'}</div>
+    </div>
+  </div>`;
+}
+
+function scRenderOT(){
+  const el=document.getElementById('sc-ot-display');if(!el)return;
+  const rows=[
+    {label:'SMS',staff:'sc-ot-sms-staff',hrs:'sc-ot-sms-hrs',handled:'sc-ot-sms-handled'},
+    {label:'Special Task',staff:'sc-ot-rty-staff',hrs:'sc-ot-rty-hrs',handled:'sc-ot-rty-handled'},
+    {label:'Email',staff:'sc-ot-email-staff',hrs:'sc-ot-email-hrs',handled:'sc-ot-email-handled'},
+  ];
+  let h=`<table class="dt"><thead><tr><th style="text-align:left;">Task</th><th>Staff Count</th><th>OT Hours</th><th>Total SMS/Ticket Handled</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const staff=document.getElementById(r.staff)?.value||0;
+    const hrs=document.getElementById(r.hrs)?.value||0;
+    const handled=document.getElementById(r.handled)?.value||0;
+    h+=`<tr><td class="qn">${r.label}</td><td class="mn">${staff}</td><td class="mn">${hrs}</td><td class="mn">${handled}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  el.innerHTML=h;
+}
+
+function scRenderSummaries(){
+  const smsSumEl=document.getElementById('sc-sms-sum-display');
+  const emailSumEl=document.getElementById('sc-email-sum-display');
+  const rtySumEl=document.getElementById('sc-rty-sum-display');
+  const othersSumEl=document.getElementById('sc-others-sum-display');
+  const dash='<span style="color:var(--text3);font-style:italic;">No summary notes added yet.</span>';
+  if(smsSumEl)smsSumEl.innerHTML=document.getElementById('sc-sms-summary').value||dash;
+  if(emailSumEl)emailSumEl.innerHTML=document.getElementById('sc-email-summary').value||dash;
+  if(rtySumEl)rtySumEl.innerHTML=document.getElementById('sc-rty-summary').value||dash;
+  if(othersSumEl)othersSumEl.innerHTML=document.getElementById('sc-others-summary').value||dash;
+}
+
+// Wire up summary textareas to auto-sync
+['sc-sms-summary','sc-email-summary','sc-rty-summary','sc-others-summary'].forEach(id=>{
+  document.addEventListener('input',e=>{if(e.target.id===id)scRenderSummaries();});
+});
+// Wire up OT inputs
+['sc-ot-sms-staff','sc-ot-sms-hrs','sc-ot-sms-handled','sc-ot-rty-staff','sc-ot-rty-hrs','sc-ot-rty-handled','sc-ot-email-staff','sc-ot-email-hrs','sc-ot-email-handled'].forEach(id=>{
+  document.addEventListener('input',e=>{if(e.target.id===id)scRenderOT();});
+});
+
+function scGenerateAnalysis(){
+  document.getElementById('sc-regen-btn').disabled=true;
+  const smsReceived=SC_DATA.sms?SC_DATA.sms.reduce((s,r)=>s+(parseInt(r['Messages received'])||0),0):0;
+  const smsClosed=parseInt(document.getElementById('sc-sms-closed').value)||0;
+  const smsRemaining=parseInt(document.getElementById('sc-sms-remaining').value)||0;
+  const smsRate=document.getElementById('sc-sms-resolved-rate')?.value||'';
+  const emailRate=document.getElementById('sc-email-handled-rate')?.value||'';
+  const supNotes=document.getElementById('sched-sup-notes').value.trim();
+
+  // SLA summary
+  let slaPct=null;
+  if(SC_DATA.sla){
+    let t=0,a=0;
+    SC_DATA.sla.forEach(r=>{t+=parseFloat(r['SLA policies'])||0;a+=parseFloat(r['Achieved SLA policies'])||0;});
+    slaPct=t>0?((a/t)*100).toFixed(1):null;
+  }
+
+  // Build qualitative notes
+  const notes=[];
+
+  // Overall summary
+  let summaryText='The Tenant Support team handled SMS, email, and special task queues for the day.';
+  if(slaPct!==null){
+    const slaNum=parseFloat(slaPct);
+    summaryText+=slaNum>=80?' Email service levels were maintained within acceptable thresholds.':slaNum>=60?' Email service levels were below target and require monitoring.':' Email service levels fell significantly below target today.';
+  }
+  if(supNotes){summaryText+=` It is also noted that ${supNotes.charAt(0).toLowerCase()+supNotes.slice(1).replace(/\.?\s*$/,'')}.`;}
+  notes.push({type:'summary',label:'Overall Summary',text:summaryText});
+
+  // SMS performance
+  let smsText='';
+  if(smsReceived>0||smsClosed>0){
+    smsText=smsClosed>0&&smsRemaining>0?
+      (smsRemaining>smsClosed?'SMS volume remained elevated by end of day, with the remaining count exceeding what was closed during the shift, indicating sustained demand.':'The SMS team made good progress through the queue, with the closed count outpacing the remaining volume by close of day.'):
+      'SMS contacts were received and processed throughout the shift.';
+    if(smsRate){
+      const r=parseFloat(smsRate);
+      smsText+=r>=50?' The SMS resolved rate was satisfactory for the day.':r>=30?' The SMS resolved rate was moderate, suggesting ongoing queue pressure.':' The SMS resolved rate was low, indicating significant pending volume carried over.';
+    }
+  } else {smsText='No SMS data was uploaded for this report.';}
+  notes.push({type:'inbound',label:'SMS Performance',text:smsText});
+
+  // Email performance
+  let emailText='';
+  const emailOpening=SC_DATA.throughput?parseInt(SC_DATA.throughput[0]?.['Opening backlog']||0):0;
+  if(emailOpening>0||emailRate){
+    emailText=emailOpening>0?`Email operations began the day with an existing backlog in the queue. `:'Email operations were active for the day. ';
+    if(emailRate){
+      const r=parseFloat(emailRate);
+      emailText+=r>=80?'The email handled rate was strong, indicating effective ticket resolution.':r>=50?'The email handled rate was at a moderate level, with some tickets remaining unresolved.':'The email handled rate was below expectations, with a notable portion of tickets unresolved by end of day.';
+    }
+    if(slaPct){emailText+=` Overall email SLA performance stood at ${slaPct}%.`;}
+  } else {emailText='No email data was uploaded for this report.';}
+  notes.push({type:'outbound',label:'Email Performance',text:emailText});
+
+  // Special Task
+  const rtyTouched=parseInt(document.getElementById('sc-rty-touched').value)||0;
+  const rtyYes=parseInt(document.getElementById('sc-rty-yes').value)||0;
+  let rtyText='';
+  if(rtyTouched>0){
+    const responseRate=rtyTouched>0?((rtyYes/rtyTouched)*100).toFixed(0):0;
+    rtyText=`Special task (RTY) contacts were processed during the shift. ${parseFloat(responseRate)>=50?'Response conversion was satisfactory.':'Response conversion was below half, suggesting tenant follow-up may be needed.'}`;
+  } else {rtyText='No special task data was recorded for this report.';}
+  notes.push({type:'flag',label:'Special Task (RTY)',text:rtyText});
+
+  const el=document.getElementById('sc-analysis-content');
+  let h='<div class="analysis-body"><div class="notes-grid">';
+  notes.forEach(n=>{h+=`<div class="note-block ${n.type}"><div class="note-type">${n.label}</div><div class="note-text">${n.text}</div></div>`;});
+  h+='</div></div>';
+  el.innerHTML=h;
+  document.getElementById('sc-regen-btn').disabled=false;
+}
+
+function scCopyHdr(){
+  const txt=document.getElementById('sc-cp-txt').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const s=document.getElementById('sc-cp-ok');s.style.opacity='1';setTimeout(()=>s.style.opacity='0',2200);
+  });
+}
+
+// Screenshot for scheduling
+async function scTakeScreenshot(){
+  document.getElementById('modal-overlay').style.display='flex';
+  document.getElementById('modal-sub').textContent='Capturing scheduling report...';
+  document.getElementById('modal-body').innerHTML='<div class="modal-progress"><div class="spinner" style="margin:0 auto 10px;width:20px;height:20px;border-width:3px;"></div>Rendering all sections...</div>';
+  document.getElementById('modal-actions').style.display='none';
+  screenshotDataUrl=null;
+
+  const hideEls=[
+    document.getElementById('sc-regen-btn'),
+    ...Array.from(document.querySelectorAll('.no-screenshot'))
+  ];
+  hideEls.forEach(el=>{if(el)el.style.display='none';});
+
+  const target=document.getElementById('sched-report-area');
+  const col=target.parentElement;
+
+  const prevColOverflow=col.style.overflow;
+  const prevColHeight=col.style.height;
+  const prevColMaxH=col.style.maxHeight;
+  col.style.overflow='visible';
+  col.style.height='auto';
+  col.style.maxHeight='none';
+
+  const prevW=target.style.width;
+  const prevMW=target.style.maxWidth;
+  target.style.width='1000px';
+  target.style.maxWidth='1000px';
+
+  await new Promise(r=>setTimeout(r,300));
+
+  try{
+    const canvas=await html2canvas(target,{backgroundColor:'#f8f7fc',scale:2,useCORS:true,logging:false,x:0,y:0,scrollX:0,scrollY:0,width:1000,height:target.scrollHeight,windowWidth:1000});
+    screenshotDataUrl=canvas.toDataURL('image/png');
+    document.getElementById('modal-sub').textContent='Image ready — copy or download to attach to your email.';
+    document.getElementById('modal-body').innerHTML=`<div class="modal-img-wrap"><img src="${screenshotDataUrl}" style="width:100%;display:block;" alt="Scheduling EOD Report"></div>`;
+    document.getElementById('modal-actions').style.display='flex';
+  }catch(e){
+    document.getElementById('modal-body').innerHTML=`<div style="padding:13px;color:var(--danger);font-size:11px;">⚠ Failed: ${e.message}</div>`;
+    document.getElementById('modal-actions').style.display='flex';
+  }finally{
+    col.style.overflow=prevColOverflow;
+    col.style.height=prevColHeight;
+    col.style.maxHeight=prevColMaxH;
+    target.style.width=prevW;
+    target.style.maxWidth=prevMW;
+    hideEls.forEach(el=>{if(el)el.style.display='';});
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   WEEKLY DATA — localStorage by date key
+══════════════════════════════════════════ */
+
+// Keys for each section stored per day
+const SC_DAY_FIELDS = {
+  sms:   ['received','closed','remaining'],
+  email: ['opening','received','closed','remaining','pending','handled'],
+  rty:   ['opening','received','touched','remaining']
+};
+
+function scDayKey(isoDate){ return 'sc_day_'+isoDate; }
+
+function scSaveDay(){
+  const iso = document.getElementById('sched-date')?.value;
+  if(!iso) return;
+  const data = {
+    sms: {
+      received:  document.getElementById('sc-sms-received')?.value||'',
+      closed:    document.getElementById('sc-sms-closed')?.value||'',
+      remaining: document.getElementById('sc-sms-remaining')?.value||''
+    },
+    email: {
+      opening:   document.getElementById('sc-email-opening')?.value||'',
+      received:  document.getElementById('sc-email-received')?.value||'',
+      closed:    document.getElementById('sc-email-closed')?.value||'',
+      remaining: document.getElementById('sc-email-remaining')?.value||'',
+      pending:   document.getElementById('sc-email-pending')?.value||'',
+      handled:   document.getElementById('sc-email-handled')?.value||''
+    },
+    rty: {
+      opening:   document.getElementById('sc-rty-opening')?.value||'',
+      received:  document.getElementById('sc-rty-received')?.value||'',
+      touched:   document.getElementById('sc-rty-touched')?.value||'',
+      remaining: document.getElementById('sc-rty-remaining')?.value||''
+    }
+  };
+  localStorage.setItem(scDayKey(iso), JSON.stringify(data));
+  renderWeeklyBreakdown();
+}
+
+function scLoadDay(iso){
+  const saved = localStorage.getItem(scDayKey(iso));
+  if(!saved) return;
+  try{
+    const d = JSON.parse(saved);
+    // Populate SMS
+    if(d.sms){
+      ['received','closed','remaining'].forEach(k=>{
+        const el=document.getElementById('sc-sms-'+k); if(el&&d.sms[k]) el.value=d.sms[k];
+      });
+    }
+    // Populate Email
+    if(d.email){
+      ['opening','received','closed','remaining','pending','handled'].forEach(k=>{
+        const el=document.getElementById('sc-email-'+k); if(el&&d.email[k]) el.value=d.email[k];
+      });
+    }
+    // Populate RTY
+    if(d.rty){
+      ['opening','received','touched','remaining'].forEach(k=>{
+        const el=document.getElementById('sc-rty-'+k); if(el&&d.rty[k]) el.value=d.rty[k];
+      });
+    }
+    scRender();
+  }catch(e){}
+}
+
+function getWeekDates(isoDate){
+  // Returns ISO date strings for Mon–the given date (up to 7 days)
+  const d = new Date(isoDate+'T12:00:00');
+  const dow = d.getDay(); // 0=Sun,1=Mon...6=Sat
+  const mondayOffset = dow===0 ? 6 : dow-1;
+  const monday = new Date(d); monday.setDate(d.getDate()-mondayOffset);
+  const dates = [];
+  for(let i=0; i<=mondayOffset && i<7; i++){
+    const dd = new Date(monday); dd.setDate(monday.getDate()+i);
+    dates.push(dd.toISOString().slice(0,10));
+  }
+  return dates;
+}
+
+function renderWeeklyBreakdown(){
+  const el = document.getElementById('weekly-table-display'); if(!el) return;
+  const iso = document.getElementById('sched-date')?.value;
+  if(!iso){ el.innerHTML='<p style="font-size:11px;color:var(--text3);">Set a report date to see the weekly breakdown.</p>'; return; }
+
+  const dates = getWeekDates(iso);
+  const dayLabels = dates.map(d=>{
+    const dt = new Date(d+'T12:00:00');
+    return dt.toLocaleDateString('en-AU',{weekday:'short',day:'2-digit',month:'short'});
+  });
+
+  // Load data for all days
+  const allData = dates.map(d=>{ try{ return JSON.parse(localStorage.getItem(scDayKey(d))||'null'); }catch(e){ return null; }});
+
+  const thS = 'font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;padding:5px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2);';
+  const tdS = 'padding:5px 8px;border-bottom:1px solid var(--border);text-align:center;font-family:monospace;font-size:10px;color:var(--text2);';
+  const lbS = 'padding:5px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);text-align:left;';
+  const shS = 'padding:6px 8px;font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px;';
+  const todayI = dates.indexOf(iso);
+
+  const sections = [
+    {key:'sms',   label:'SMS Volume',    color:'#0d7c4b', rows:[
+      {k:'received',l:'Received'},{k:'closed',l:'Closed'},{k:'remaining',l:'Remaining'}
+    ]},
+    {key:'email', label:'Email Volume',  color:'#5000b3', rows:[
+      {k:'opening',l:'Opening Backlog'},{k:'received',l:'Received'},{k:'closed',l:'Closed'},
+      {k:'remaining',l:'Remaining'},{k:'pending',l:'Pending'},{k:'handled',l:'Tickets Handled'}
+    ]},
+    {key:'rty',   label:'Special Task',  color:'#ff6400', rows:[
+      {k:'opening',l:'Opening SMS'},{k:'received',l:'Received'},{k:'touched',l:'SMS Touched'},{k:'remaining',l:'Remaining'}
+    ]},
+  ];
+
+  let h = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:${300+dates.length*90}px;">
+    <thead><tr>
+      <th style="${thS}text-align:left;min-width:160px;">Metric</th>
+      ${dayLabels.map((l,i)=>`<th style="${thS}${i===todayI?'background:var(--orange-light);color:var(--orange-dark);':''}">${l}</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  sections.forEach(sec=>{
+    h += `<tr><td colspan="${dates.length+1}" style="${shS}background:${sec.color};">${sec.label}</td></tr>`;
+    sec.rows.forEach(row=>{
+      const isTime = ['frt','trt'].includes(row.k);
+      const vals = allData.map(d=>{ if(!d||!d[sec.key]) return ''; return d[sec.key][row.k]||''; });
+      const total = isTime ? '' : vals.reduce((s,v)=>s+(parseFloat(v)||0),0)||'';
+      h += `<tr>
+        <td style="${lbS}">${row.l}</td>
+        ${vals.map((v,i)=>`<td style="${tdS}${i===todayI?'background:var(--orange-light);font-weight:600;':''}">${v||'—'}</td>`).join('')}
+      </tr>`;
+    });
+  });
+
+  h += `</tbody></table></div>`;
+  el.innerHTML = h;
+}
+
+/* Google Sheets Sync — kept for future use */
+const gsUrl = 'https://script.google.com/macros/s/AKfycby6tjwEOwSW13NlCgBkXy6n7UH73bH4rQ2amjb0SCQckGqFvvnhCMmCMhb57m-ATTk/exec';
+async function gsSave(){
+  const status=document.getElementById('gs-status');
+  if(status){status.textContent='Saving...';status.style.color='var(--text3)';}
+  try{
+    const payload={action:'save',data:weekData,week:getWeekKey()};
+    const resp=await fetch(gsUrl,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
+    const result=await resp.text();
+    if(status){status.textContent='✓ Saved';status.style.color='var(--ok)';setTimeout(()=>status.textContent='',3000);}
+  }catch(e){
+    if(status){status.textContent='⚠ '+e.message;status.style.color='var(--er)';}
+  }
+}
+async function gsLoad(){
+  const status=document.getElementById('gs-status');
+  if(status){status.textContent='Loading...';status.style.color='var(--text3)';}
+  try{
+    const resp=await fetch(`${gsUrl}?action=load&week=${getWeekKey()}`);
+    const result=await resp.json();
+    if(result.data){
+      weekData=result.data;
+      localStorage.setItem('wk_data',JSON.stringify(weekData));
+      renderWeeklyBreakdown();
+      if(status){status.textContent='✓ Loaded';status.style.color='var(--ok)';setTimeout(()=>status.textContent='',3000);}
+    } else {
+      if(status){status.textContent='No data for this week';status.style.color='var(--text3)';setTimeout(()=>status.textContent='',3000);}
+    }
+  }catch(e){
+    if(status){status.textContent='⚠ '+e.message;status.style.color='var(--er)';}
+  }
+}
+
+
+// Init scheduling
+function scInit(){
+  scInitDate();
+  scRenderHCTable();
+  scRenderAttendance();
+  scRender();
+  renderWeeklyBreakdown();
+
+}
+document.getElementById('main-nav').style.display='none';
+document.getElementById('main-workspace').style.display='none';
+document.getElementById('sched-workspace').style.display='none';
+document.getElementById('welcome-screen').style.display='block';
+renderHCTable();syncHCDisplay();syncOvDisplay();updateCopyHeader();
+// Pre-render scheduling HC table so rows are ready when mode is selected
+scRenderHCTable();
+</script>
+
+<script>
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    if (typeof selectMode === 'function') selectMode('weekend');
+  }, 50);
+});
+</script>
+</body>
+</html>
